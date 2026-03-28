@@ -6,10 +6,11 @@ import { Montserrat, Nunito } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import Navbar from "~/components/Navbar";
 import Footer from "~/components/Footer";
+import EnrollModal from "~/components/EnrollModal";
 
 export const metadata: Metadata = {
   title: {
-    default: "Orvion | Industry Ready Tech Programs",
+    default: "Orvion — Industry-Ready Tech Programs",
     template: "%s | Orvion",
   },
   description:
@@ -71,6 +72,7 @@ export default function RootLayout({
       <body className="antialiased selection:bg-orvion-primary selection:text-white" style={{ fontFamily: "var(--font-body)" }}>
         <TRPCReactProvider>
           <Navbar />
+          <EnrollModal />
           <main className="min-h-screen">
             {children}
           </main>

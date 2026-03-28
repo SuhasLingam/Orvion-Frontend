@@ -80,13 +80,13 @@ export default function ProgramHero({ program }: { program: Program }) {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href="/contact"
+              <button
+                onClick={() => window.dispatchEvent(new Event("openEnrollModal"))}
                 className="bg-[#305EFF] text-white px-8 py-3.5 rounded-xl font-semibold text-[16px] text-center hover:bg-blue-600 hover:shadow-[0_8px_20px_rgba(48,94,255,0.25)] hover:-translate-y-0.5 transition-all duration-300"
                 style={{ fontFamily: "SF Pro Display, sans-serif" }}
               >
                 Enroll Now
-              </Link>
+              </button>
               <Link
                 href="/contact"
                 className="bg-white text-[#305EFF] border-[1.5px] border-[#305EFF] px-8 py-3.5 rounded-xl font-semibold text-[16px] text-center hover:bg-blue-50 hover:-translate-y-0.5 transition-all duration-300"

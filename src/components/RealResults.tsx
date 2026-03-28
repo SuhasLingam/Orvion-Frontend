@@ -79,13 +79,13 @@ export default function RealResults() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="flex flex-col sm:flex-row justify-center items-center gap-6 mt-12 md:mt-16 w-full"
           >
-            <Link
-              href="#enroll"
+            <button
+              onClick={() => window.dispatchEvent(new Event("openEnrollModal"))}
               className="text-white px-12 py-3.5 rounded-xl font-bold text-[16px] text-center hover:shadow-[0_8px_20px_rgba(206,170,59,0.25)] hover:-translate-y-0.5 transition-all duration-300 min-w-[180px]"
               style={{ background: "linear-gradient(90deg, #CEAA3B 0%, #967C53 100%)" }}
             >
               Enroll Now
-            </Link>
+            </button>
             <Link
               href="#call"
               className="bg-white text-[#CDA93D] border-[1.5px] border-[#CDA93D]/40 px-12 py-3.5 rounded-xl font-bold text-[16px] text-center hover:bg-[#FDFBF7] hover:shadow-[0_8px_20px_rgba(205,169,61,0.12)] hover:-translate-y-0.5 transition-all duration-300 min-w-[180px]"

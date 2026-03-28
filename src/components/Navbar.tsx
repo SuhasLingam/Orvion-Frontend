@@ -44,13 +44,13 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex shrink-0">
-            <Link
-              href="/contact"
+            <button
+              onClick={() => window.dispatchEvent(new Event("openEnrollModal"))}
               className="bg-orvion-primary text-white px-8 py-3 rounded-[100px] font-medium text-[15px] hover:shadow-[0_8px_15px_rgba(48,94,255,0.2)] hover:-translate-y-0.5 transition-all duration-300"
               style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
             >
               Enroll Now
-            </Link>
+            </button>
           </div>
 
           {/* Mobile menu button */}
@@ -89,14 +89,16 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="pt-6 px-4">
-                <Link
-                  href="/contact"
-                  onClick={() => setIsOpen(false)}
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    window.dispatchEvent(new Event("openEnrollModal"));
+                  }}
                   className="flex justify-center w-full bg-orvion-primary text-white px-6 py-4 rounded-[100px] font-medium text-[17px] hover:shadow-md transition-all active:scale-95"
                   style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
                 >
                   Enroll Now
-                </Link>
+                </button>
               </div>
             </div>
           </motion.div>
