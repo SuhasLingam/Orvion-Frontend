@@ -3,6 +3,8 @@ import { getProgramById, programs } from "~/data/programs";
 import ProgramHero from "~/components/program/ProgramHero";
 import ProgramTechnologies from "~/components/program/ProgramTechnologies";
 import ProgramOutcomes from "~/components/program/ProgramOutcomes";
+import ProgramCurriculum from "~/components/program/ProgramCurriculum";
+import ProgramProjects from "~/components/program/ProgramProjects";
 import ProgramCTA from "~/components/program/ProgramCTA";
 import RealResults from "~/components/RealResults";
 
@@ -20,6 +22,11 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
       <ProgramHero program={program} />
       <ProgramTechnologies technologies={program.technologies} />
       <ProgramOutcomes outcomes={program.outcomes} />
+      
+      {/* Conditionally render if curriculum exists */}
+      {program.curriculum && <ProgramCurriculum curriculum={program.curriculum} />}
+      {program.projectsFramework && <ProgramProjects framework={program.projectsFramework} />}
+      
       <ProgramCTA />
       <RealResults />
     </div>

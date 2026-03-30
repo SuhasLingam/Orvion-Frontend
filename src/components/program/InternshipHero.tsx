@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle2, ArrowLeft, Palette, Cloud, BrainCircuit, Shield, Atom, type LucideIcon } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Palette, Cloud, BrainCircuit, Shield, Atom, Network, Database, type LucideIcon } from "lucide-react";
 import type { Program } from "~/data/programs";
 
 const iconMap: Record<string, LucideIcon> = {
   "ui-ux-design": Palette,
   "devops-cloud": Cloud,
   "ai-data-science": BrainCircuit,
+  "machine-learning": Network,
+  "data-engineering": Database,
   "cybersecurity": Shield,
   "quantum-computing": Atom,
 };

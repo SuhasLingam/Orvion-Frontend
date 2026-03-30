@@ -62,10 +62,10 @@ export default function Footer() {
                 </a>
               </li>
               <li className="text-[15px] font-semibold text-[#4B5563]">
-                +91 98765 43210
+                +91 79-97226888
               </li>
               <li className="text-[15px] font-semibold text-[#4B5563] leading-relaxed">
-                Bengaluru, Karnataka,<br />
+                Ongole,<br />
                 India
               </li>
             </ul>

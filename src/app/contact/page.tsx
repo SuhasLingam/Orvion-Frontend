@@ -14,13 +14,13 @@ const contactCards = [
   {
     icon: Phone,
     title: "Call Us",
-    value: "+91 98765 43210",
+    value: "+91 79-97226888",
     sub: "Mon–Sat, 10 AM – 7 PM",
   },
   {
     icon: MapPin,
     title: "Find Us",
-    value: "Bengaluru, Karnataka",
+    value: "Ongole",
     sub: "India",
   },
 ];
@@ -80,15 +80,10 @@ export default function ContactPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-[48px] md:text-[68px] font-extrabold leading-[1.05] tracking-tight mb-5 text-[#0B0F19]"
+            className="text-[48px] md:text-[68px] font-extrabold leading-[1.05] tracking-tight mb-5 bg-clip-text text-transparent pb-2"
+            style={{ backgroundImage: "linear-gradient(90deg, #1A3175 0%, #305EFF 100%)" }}
           >
-            We&apos;d love to{" "}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "linear-gradient(180deg, #1A3175 0%, #305EFF 100%)" }}
-            >
-              hear from you
-            </span>
+            We&apos;d love to hear from you
           </motion.h1>
 
           <motion.p

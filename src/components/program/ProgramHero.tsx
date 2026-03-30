@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle2, ArrowLeft, Palette, Cloud, BrainCircuit, Shield, Atom, type LucideIcon } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Palette, Cloud, BrainCircuit, Shield, Atom, Network, Database, type LucideIcon } from "lucide-react";
 import type { Program } from "~/data/programs";
 
 const iconMap: Record<string, LucideIcon> = {
   "ui-ux-design": Palette,
   "devops-cloud": Cloud,
   "ai-data-science": BrainCircuit,
+  "machine-learning": Network,
+  "data-engineering": Database,
   "cybersecurity": Shield,
   "quantum-computing": Atom,
 };
@@ -87,13 +89,20 @@ export default function ProgramHero({ program }: { program: Program }) {
               >
                 Enroll Now
               </button>
-              <Link
-                href="/contact"
-                className="bg-white text-[#305EFF] border-[1.5px] border-[#305EFF] px-8 py-3.5 rounded-xl font-semibold text-[16px] text-center hover:bg-blue-50 hover:-translate-y-0.5 transition-all duration-300"
+              <button
+                onClick={() => {
+                  const el = document.getElementById('curriculum');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    window.dispatchEvent(new Event("openEnrollModal"));
+                  }
+                }}
+                className="bg-white text-[#305EFF] border-[1.5px] border-[#305EFF] px-8 py-3.5 rounded-xl font-semibold text-[16px] hover:bg-blue-50 hover:-translate-y-0.5 transition-all duration-300"
                 style={{ fontFamily: "SF Pro Display, sans-serif" }}
               >
                 Get Syllabus
-              </Link>
+              </button>
             </div>
           </motion.div>
 
@@ -124,19 +133,19 @@ export default function ProgramHero({ program }: { program: Program }) {
               </div>
 
               {/* Highlight items */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col">
                 {program.highlights.map((item, i) => (
                   <motion.div
                     key={item}
                     initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.35 + i * 0.08, duration: 0.4 }}
-                    className="flex items-start gap-4 bg-[#DCE4F5] border border-[#CCD8F0] rounded-xl px-4 py-4"
+                    className="flex items-start gap-4 py-3 border-b border-[#E2E8F0]/80 last:border-0"
                   >
-                    <span className="w-6 h-6 rounded-full bg-[#1e293b] flex items-center justify-center shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#eff6ff]" strokeWidth={2.5} />
+                    <span className="w-6 h-6 rounded-full bg-[#EEF2FF] flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-4 h-4 text-[#305EFF]" strokeWidth={2.5} />
                     </span>
-                    <span className="text-[14px] leading-relaxed text-[#334155] font-medium pr-2">
+                    <span className="text-[15px] leading-relaxed text-[#334155] font-medium pr-2">
                       {item}
                     </span>
                   </motion.div>

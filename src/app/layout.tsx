@@ -7,6 +7,8 @@ import { TRPCReactProvider } from "~/trpc/react";
 import Navbar from "~/components/Navbar";
 import Footer from "~/components/Footer";
 import EnrollModal from "~/components/EnrollModal";
+import ScrollProgress from "~/components/ScrollProgress";
+import SmoothScroll from "~/components/SmoothScroll";
 
 export const metadata: Metadata = {
   title: {
@@ -69,14 +71,17 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${montserrat.variable} ${nunito.variable} scroll-smooth`}>
-      <body className="antialiased selection:bg-orvion-primary selection:text-white" style={{ fontFamily: "var(--font-body)" }}>
+      <body className="antialiased selection:bg-orvion-primary selection:text-white overflow-x-hidden" style={{ fontFamily: "var(--font-body)" }}>
         <TRPCReactProvider>
-          <Navbar />
-          <EnrollModal />
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Footer />
+          <SmoothScroll>
+            <ScrollProgress />
+            <Navbar />
+            <EnrollModal />
+            <main className="min-h-screen">
+              {children}
+            </main>
+            <Footer />
+          </SmoothScroll>
         </TRPCReactProvider>
       </body>
     </html>

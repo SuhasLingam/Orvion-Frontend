@@ -43,6 +43,15 @@ const techLogoMap: Record<string, string> = {
   "Cirq": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
   "PennyLane": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
   "IBM Quantum Experience": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
+  // New Additions (ML & Data Engineering)
+  "XGBoost": "https://upload.wikimedia.org/wikipedia/commons/6/69/XGBoost_logo.png",
+  "Flask/FastAPI": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg",
+  "SQL": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg",
+  "Apache Spark": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apachespark/apachespark-original.svg",
+  "Apache Airflow": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/apacheairflow.svg",
+  "Kafka": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apachekafka/apachekafka-original.svg",
+  "Snowflake": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/snowflake.svg",
+  "AWS/Azure": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-plain-wordmark.svg",
 };
 
 export default function ProgramTechnologies({ technologies }: { technologies: string[] }) {

@@ -2,21 +2,23 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Palette, Cloud, BrainCircuit, Shield, Atom, type LucideIcon } from "lucide-react";
+import { Palette, Cloud, BrainCircuit, Shield, Atom, Network, Database, type LucideIcon } from "lucide-react";
 import { programs } from "~/data/programs";
 
 const iconMap: Record<string, LucideIcon> = {
   "ui-ux-design": Palette,
   "devops-cloud": Cloud,
   "ai-data-science": BrainCircuit,
+  "machine-learning": Network,
+  "data-engineering": Database,
   "cybersecurity": Shield,
   "quantum-computing": Atom,
 };
 
 export default function Internships() {
   return (
-    <section id="internships" className="w-full px-3 py-16 bg-white flex flex-col items-center">
-      <div className="w-full max-w-[1240px] flex flex-col items-center">
+    <section id="internships" className="w-full px-4 md:px-8 xl:px-12 py-24 bg-white flex flex-col items-center cursor-default">
+      <div className="w-full max-w-[1640px] flex flex-col items-center">
 
         <div className="text-center mb-16">
           <motion.h2
@@ -39,50 +41,56 @@ export default function Internships() {
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 w-full px-4 md:px-0">
-          {programs.map((program, i) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 xl:gap-12 w-full">
+          {programs
+            .filter((p) => !["data-engineering", "machine-learning"].includes(p.id))
+            .map((program, i) => {
             const Icon = iconMap[program.id] ?? BrainCircuit;
 
             return (
               <motion.div
                 key={program.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="relative group block"
+                className="relative group block h-full"
               >
-                <Link href={`/internships/${program.id}`}>
-                  <div className="h-full flex flex-col items-center text-center bg-[#F8FAFC] rounded-2xl p-8 pt-10 
-                               border-t-2 border-l-2 border-[#305EFF] 
-                               border-b border-r border-[#E2E8F0] shadow-[0_8px_30px_rgb(0,0,0,0.04)]
-                               hover:shadow-[0_8px_30px_rgb(48,94,255,0.12)] hover:-translate-y-1 transition-all duration-300">
-
-                    {/* Custom SVG Paperclip matching the UI */}
-                    <div className="absolute -top-3 -right-3 rotate-[15deg] drop-shadow-sm">
-                      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <Link href={`/internships/${program.id}`} className="block h-full">
+                  {/* Gradient Border Wrapper */}
+                  <div className="h-full w-full rounded-[24px] p-[4px] bg-gradient-to-b from-[#305EFF] via-[#E2E8F0]/80 to-[#E2E8F0]/30 shadow-[0_8px_30px_rgba(0,0,0,0.06)] relative flex flex-col group">
+                    
+                    {/* Oversized Paperclip matching the UI */}
+                    <div className="absolute -top-7 -right-4 drop-shadow-md z-20 transition-transform duration-300 group-hover:rotate-3 group-hover:-translate-y-1">
+                      <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="rotate-[25deg]">
                         <path d="M21.5 8.5L12 18C10.5 19.5 10.5 22 12 23.5V23.5C13.5 25 16 25 17.5 23.5L27.5 13.5C30 11 30 7 27.5 4.5V4.5C25 2 21 2 18.5 4.5L8.5 14.5C5.18629 17.8137 5.18629 23.1863 8.5 26.5V26.5C11.8137 29.8137 17.1863 29.8137 20.5 26.5L28.5 18.5"
-                          stroke="#1A3175" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                          stroke="#081A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>
 
-                    {/* White Icon Circle */}
-                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-[#E2E8F0] relative z-10 transition-transform">
-                      <Icon className="w-6 h-6 text-[#305EFF]" strokeWidth={2} />
-                    </div>
+                    {/* Inner Card Content */}
+                    <div className="h-full bg-[#f8fafc] rounded-[20px] p-6 sm:px-8 sm:py-7 flex flex-col items-center text-center relative overflow-hidden">
+                      
+                      {/* Grey Icon Rounded Square */}
+                      <div className="w-[72px] h-[72px] bg-[#D1D5DB]/60 rounded-xl flex items-center justify-center mb-6">
+                         <Icon className="w-7 h-7 text-[#9CA3AF]" strokeWidth={2} />
+                      </div>
 
-                    <h3 className="text-[20px] font-bold text-[#0B0F19] mb-3 leading-tight font-heading transition-colors">
-                      {program.title} <span className="text-[#305EFF]">{program.titleHighlight}</span>
-                    </h3>
+                      <h3 className="text-[24px] sm:text-[26px] font-bold text-[#0B0F19] mb-2 leading-tight font-heading">
+                        {program.title} {program.titleHighlight} Internships
+                      </h3>
+                      
+                      <p className="text-[14px] sm:text-[15px] text-[#4B5563] font-medium leading-relaxed mb-8 line-clamp-2 px-2">
+                        {program.description}
+                      </p>
 
-                    <p className="text-[13px] text-[#4B5563] font-medium leading-relaxed mb-6 px-2 line-clamp-2">
-                      {program.description}
-                    </p>
+                      {/* Bottom Section */}
+                      <div className="w-full flex justify-center mt-auto">
+                        <div className="bg-[#B9CAE8]/50 border border-[#94A3B8]/30 text-[#0B0F19] text-[13px] font-medium px-6 py-2 rounded-lg">
+                          {program.duration}
+                        </div>
+                      </div>
 
-                    <div className="mt-auto">
-                      <span className="inline-block bg-[#E2E8F0] text-[#1E293B] text-[11px] font-bold px-4 py-1.5 rounded-md">
-                        {program.duration}
-                      </span>
                     </div>
                   </div>
                 </Link>
