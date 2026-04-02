@@ -68,7 +68,7 @@ export default function ProgramTechnologies({ technologies }: { technologies: st
           Technologies You&apos;ll Master
         </motion.h2>
 
-        <div className="flex flex-wrap gap-5">
+        <div className="flex flex-wrap justify-center md:justify-start gap-4 sm:gap-5">
           {technologies.map((tech, i) => {
             const logoUrl = techLogoMap[tech];
             return (

@@ -60,7 +60,7 @@ export default function Programs() {
 
                     {/* Inner Card Content */}
                     <div className="h-full bg-[#f8fafc] rounded-[20px] rounded-tr-[96px] p-6 sm:px-8 sm:py-7 flex flex-col items-start text-left relative overflow-hidden">
-                      
+
                       {/* Grey Icon Circle */}
                       <div className="w-[64px] h-[64px] bg-[#D1D5DB]/60 rounded-full flex items-center justify-center mb-6">
                         <Icon className="w-7 h-7 text-[#9CA3AF]" strokeWidth={2} />
@@ -69,7 +69,7 @@ export default function Programs() {
                       <h3 className="text-[24px] sm:text-[26px] font-bold text-[#0B0F19] mb-2 leading-tight font-heading">
                         {program.title} {program.titleHighlight}
                       </h3>
-                      
+
                       <p className="text-[14px] sm:text-[15px] text-[#4B5563] font-medium leading-relaxed mb-8 line-clamp-2">
                         {program.description}
                       </p>
@@ -105,7 +105,7 @@ rounded-lg">
         >
           <Link
             href="#programs"
-            className="inline-block bg-[#1B324D] text-white px-10 py-4 rounded-xl font-semibold text-[16px] hover:bg-[#112338] shadow-[0_4px_14px_rgba(27,50,77,0.3)] transition-all hover:-translate-y-0.5"
+            className="inline-block bg-[#305EFF] text-white px-10 py-4 rounded-xl font-semibold text-[16px] hover:bg-[#112338] shadow-[0_4px_14px_rgba(27,50,77,0.3)] transition-all hover:-translate-y-0.5"
           >
             Explore All Programs
           </Link>

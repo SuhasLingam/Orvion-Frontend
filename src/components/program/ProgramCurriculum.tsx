@@ -11,8 +11,8 @@ export default function ProgramCurriculum({ curriculum }: { curriculum: Month[] 
   if (!curriculum || curriculum.length === 0) return null;
 
   return (
-    <section id="curriculum" className="w-full px-4 py-20 bg-white border-t border-[#F1F5F9]">
-      <div className="max-w-[1000px] mx-auto">
+    <section id="curriculum" className="w-full px-2 md:px-4 py-20 bg-white border-t border-[#F1F5F9]">
+      <div className="max-w-[1200px] mx-auto">
         
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-12">
@@ -29,12 +29,12 @@ export default function ProgramCurriculum({ curriculum }: { curriculum: Month[] 
 
         {/* Tab System for Months */}
         <div className="mt-8">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 border-b border-[#E2E8F0] pb-2 sm:mb-8 justify-center">
+          <div className="flex flex-nowrap items-center gap-1 sm:gap-2 border-b border-[#E2E8F0] pb-2 justify-start lg:justify-center sm:mb-8">
             {curriculum.map((month, idx) => (
               <button
                 key={month.month}
                 onClick={() => setActiveTab(idx)}
-                className={`flex flex-col items-center sm:block px-4 py-3 rounded-t-xl font-bold transition-all border-b-2 bg-transparent text-[14px] sm:text-[16px] ${
+                className={`flex flex-col items-center sm:block px-2 sm:px-3 py-3 rounded-t-xl font-bold transition-all border-b-2 bg-transparent text-[13px] sm:text-[15px] transition-colors duration-200 ${
                   activeTab === idx 
                     ? "border-[#305EFF] text-[#305EFF] bg-[#F8FAFC]" 
                     : "border-transparent text-[#64748B] hover:text-[#0B0F19] hover:bg-[#F8FAFC]"
