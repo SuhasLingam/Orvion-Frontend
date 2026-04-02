@@ -65,10 +65,170 @@ export const programs: Program[] = [
     ],
     responsibilities: [
       "Conduct comprehensive user research and summarize usability findings",
-      "Design wireframes, mockups, and highly interactive prototypes",
       "Collaborate with engineering teams to ensure pixel-perfect handoffs",
       "Maintain and expand central design systems and component libraries",
     ],
+    curriculum: [
+      {
+        month: 1,
+        title: "Foundations & Empathy",
+        assessment: "Design Challenge 1",
+        weeks: [
+          {
+            week: 1,
+            title: "Intro to UI/UX",
+            topics: ["Design thinking principles", "Difference between UI and UX", "The double diamond process", "Figma interface and setup"]
+          },
+          {
+            week: 2,
+            title: "User Research Basics",
+            topics: ["Qualitative vs Quantitative research", "Creating User Personas", "Empathy maps", "Interviewing techniques"]
+          },
+          {
+            week: 3,
+            title: "Information Architecture",
+            topics: ["Card sorting", "Sitemaps", "User flows", "Navigation patterns"]
+          },
+          {
+            week: 4,
+            title: "Wireframing",
+            topics: ["Low-fidelity wireframing", "Paper sketches", "Wireframing in Figma", "Heuristic evaluation"]
+          }
+        ]
+      },
+      {
+        month: 2,
+        title: "High-Fidelity Design",
+        assessment: "Design Challenge 2",
+        weeks: [
+          {
+            week: 5,
+            title: "Visual Design Basics",
+            topics: ["Color theory and accessibility", "Typography scale", "Grid systems and spacing", "Visual hierarchy"]
+          },
+          {
+            week: 6,
+            title: "Figma Mastery",
+            topics: ["Auto-layout", "Variants and properties", "Components", "Styles library"]
+          },
+          {
+            week: 7,
+            title: "Prototyping",
+            topics: ["Interactive prototypes", "Smart animate", "Micro-interactions", "User testing setups"]
+          },
+          {
+            week: 8,
+            title: "Design Systems",
+            topics: ["Building a design system from scratch", "Atomic design principles", "Tokens and UI kits", "Documentation"]
+          }
+        ]
+      },
+      {
+        month: 3,
+        title: "Testing & Portfolio",
+        assessment: "Final Capstone",
+        weeks: [
+          {
+            week: 9,
+            title: "Usability Testing",
+            topics: ["A/B testing", "Heatmaps", "Synthesizing test data", "Iterative design"]
+          },
+          {
+            week: 10,
+            title: "Responsive Design",
+            topics: ["Mobile-first approach", "Breakpoints", "Platform guidelines (iOS vs Material)", "Web accessibility (WCAG)"]
+          },
+          {
+            week: 11,
+            title: "Developer Handoff",
+            topics: ["Exporting assets", "Redlining", "Commenting and documentation", "Collaborating with engineers"]
+          },
+          {
+            week: 12,
+            title: "Capstone & Portfolio",
+            topics: ["Crafting case studies", "Behance/Dribbble presentation", "Resume formatting", "Mock interviews"]
+          }
+        ]
+      }
+    ],
+    projectsFramework: {
+      overview: "The UI/UX Design project framework ensures a steady evolution from basic visual layouts to complex, data-driven design systems.",
+      stages: [
+        "Set 1 & 2: Wireframing and Visual Layouts",
+        "Set 3 & 4: Interactive Workflows and Mobile Apps",
+        "Set 5: Capstone Complete Platform Redesign"
+      ],
+      sets: [
+        {
+          setName: "Project Set 1",
+          level: "Foundational Level (Wireframes)",
+          description: "Focus on user flows, mapping, and low-fidelity structural outlines without visual distraction.",
+          projects: [
+            "Coffee Shop Loyalty App Wireframe",
+            "To-Do List Information Architecture",
+            "News Portal Sitemap and Flow",
+            "Simple E-commerce Checkout Flow"
+          ]
+        },
+        {
+          setName: "Project Set 2",
+          level: "Foundational Level (High Fidelity)",
+          description: "Translating wireframes into polished, accessible user interfaces using typography and color.",
+          projects: [
+            "Landing Page for a Local Bakery",
+            "Personal Portfolio Web Design",
+            "Music Player UI Concept",
+            "Weather App Visual Redesign"
+          ]
+        },
+        {
+          setName: "Project Set 3",
+          level: "Intermediate Level (Prototyping)",
+          description: "Adding interactive elements, micro-animations, and dynamic prototyping states.",
+          projects: [
+            "Interactive Travel Booking App Prototype",
+            "Smart Home Control Dashboard",
+            "Cryptocurrency Wallet Onboarding Flow",
+            "Fitness Tracker Goal Animation"
+          ]
+        },
+        {
+          setName: "Project Set 4",
+          level: "Intermediate Level (Design Systems)",
+          description: "Creating unified token libraries and component systems that scale across multiple platforms.",
+          projects: [
+            "SaaS CRM Dashboard UI Kit",
+            "E-learning Platform Mobile & Desktop Design",
+            "Fintech App Design System Construction",
+            "Healthcare Patient Portal Cross-Platform Design"
+          ]
+        },
+        {
+          setName: "Project Set 5",
+          level: "Advanced Level (Capstone)",
+          description: "End-to-end holistic platform redesign including user research, usability testing, and developer handoff documentation.",
+          projects: [
+            "End-to-End Social Media Redesign based on User Research",
+            "Complex Enterprise ERP Software Dashboard",
+            "Government Services Accessibility Redesign",
+            "Omnichannel Retail App with AR Integration"
+          ]
+        }
+      ],
+      guidelines: [
+        "Create strict User Personas before jumping to Figma",
+        "Ensure WCAG AA compliance across all high-fidelity designs",
+        "Use Auto-layout for 100% of the scalable components",
+        "Document handoff guidelines thoroughly"
+      ],
+      learningOutcomes: [
+        "Master industry-standard wireframing and prototyping methodologies",
+        "Construct comprehensive Design Systems",
+        "Synthesize user feedback into actionable design iterations",
+        "Present professional case studies with clear ROI metrics"
+      ],
+      conclusion: "This framework bridges the gap between aesthetic execution and deep user empathy, ensuring candidates produce beautiful designs that solve real business problems."
+    }
   },
   {
     id: "devops-cloud",
@@ -97,6 +257,193 @@ export const programs: Program[] = [
       "Resolve deployment bottlenecks in CI/CD pipeline workflows",
       "Implement container security and auto-scaling policies",
     ],
+    curriculum: [
+      {
+        month: 1,
+        title: "Linux & Networking",
+        assessment: "Infrastructure Assessment 1",
+        weeks: [
+          {
+            week: 1,
+            title: "Linux Fundamentals",
+            topics: ["File system hierarchy", "Bash scripting basics", "User and permission management", "Process management"]
+          },
+          {
+            week: 2,
+            title: "Networking Basics",
+            topics: ["OSI & TCP/IP models", "DNS, HTTP/HTTPS, SSL/TLS", "Subnetting and Routing", "Load balancing concepts"]
+          },
+          {
+            week: 3,
+            title: "Version Control Systems",
+            topics: ["Git core concepts", "Branching and merging strategies", "Resolving merge conflicts", "Advanced GitHub workflows"]
+          },
+          {
+            week: 4,
+            title: "Introduction to Cloud Computing",
+            topics: ["AWS vs Azure vs GCP", "IaaS, PaaS, SaaS", "IAM Basics", "Provisioning a basic EC2 environment"]
+          }
+        ]
+      },
+      {
+        month: 2,
+        title: "Infrastructure & CI/CD",
+        assessment: "Deployment Assessment 2",
+        weeks: [
+          {
+            week: 5,
+            title: "Cloud Infrastructure (AWS)",
+            topics: ["VPC design", "S3 and object storage", "RDS and managed databases", "AWS Security Groups"]
+          },
+          {
+            week: 6,
+            title: "Continuous Integration",
+            topics: ["Jenkins architecture", "Building freestyle and pipeline jobs", "Integrating Git hooks", "Artifact management"]
+          },
+          {
+            week: 7,
+            title: "Continuous Deployment",
+            topics: ["GitHub Actions", "Matrix builds", "Blue-Green deployment patterns", "Canary releases"]
+          },
+          {
+            week: 8,
+            title: "Infrastructure as Code",
+            topics: ["Terraform state management", "Writing HCL modules", "Provisioning multi-tier architectures", "Drift detection"]
+          }
+        ]
+      },
+      {
+        month: 3,
+        title: "Containerization & Orchestration",
+        assessment: "Cluster Assessment 3",
+        weeks: [
+          {
+            week: 9,
+            title: "Docker Essentials",
+            topics: ["Container vs Virtualization", "Building optimized Dockerfiles", "Docker Compose", "Volume mapping"]
+          },
+          {
+            week: 10,
+            title: "Kubernetes Foundations",
+            topics: ["K8s Architecture (Master/Worker)", "Pods and Deployments", "Services and Ingress", "ConfigMaps and Secrets"]
+          },
+          {
+            week: 11,
+            title: "Advanced Kubernetes",
+            topics: ["StatefulSets vs DaemonSets", "Horizontal Pod Autoscaler", "Helm charts", "RBAC security"]
+          },
+          {
+            week: 12,
+            title: "Cloud Native Microservices",
+            topics: ["Service meshes (Istio)", "API Gateways", "Event-driven scaling (KEDA)", "Microservice troubleshooting"]
+          }
+        ]
+      },
+      {
+        month: 4,
+        title: "Monitoring, Security & Capstone",
+        weeks: [
+          {
+            week: 13,
+            title: "Observability & Monitoring",
+            topics: ["Prometheus metrics", "Grafana dashboards", "ELK stack (Elasticsearch, Logstash, Kibana)", "Alerting mechanisms"]
+          },
+          {
+            week: 14,
+            title: "DevSecOps",
+            topics: ["Static Application Security Testing (SAST)", "Container scanning", "Secret management securely", "Compliance as Code"]
+          },
+          {
+            week: 15,
+            title: "Career & Interview Prep",
+            topics: ["System Design interviews", "SRE best practices", "Resume building", "Mock technical interviews"]
+          },
+          {
+            week: 16,
+            title: "Capstone Project",
+            topics: ["End-to-End pipeline defense", "Cost optimization analysis", "Final deployment and presentation", "Code review"]
+          }
+        ]
+      }
+    ],
+    projectsFramework: {
+      overview: "The Cloud & DevOps engineering project track bridges the gap between local development scripts and enterprise-level planetary-scale automated infrastructure.",
+      stages: [
+        "Set 1 & 2: Base Scripts and CI integration",
+        "Set 3 & 4: Automation, IaC, and K8s orchestration",
+        "Set 5: Enterprise Multi-Tier deployments"
+      ],
+      sets: [
+        {
+          setName: "Project Set 1",
+          level: "Foundational Level (Linux & Git)",
+          description: "Scripting basics and ensuring robust version control hygiene.",
+          projects: [
+            "Automated Linux User & Group Provisioner",
+            "Automated Server Backup & Log Rotation Script",
+            "Git Hook Pre-commit Linter System",
+            "Nginx Web Server Configuration Script"
+          ]
+        },
+        {
+          setName: "Project Set 2",
+          level: "Foundational Level (Cloud Basics)",
+          description: "Manually and predictably deploying robust base architectures into the cloud.",
+          projects: [
+            "Deploy a highly available LAMP stack on AWS EC2",
+            "Static S3 Website with CloudFront CDN",
+            "Serverless API Backend using AWS Lambda & API Gateway",
+            "VPC Network Planner with Public/Private Subnets"
+          ]
+        },
+        {
+          setName: "Project Set 3",
+          level: "Intermediate Level (CI/CD Pipelines)",
+          description: "Creating automated delivery pipelines using Jenkins and GitHub Actions.",
+          projects: [
+            "Automated Node.js Testing Pipeline with GitHub Actions",
+            "Jenkins Multi-Branch Docker Build Pipeline",
+            "Automated Python PyTest Notification System",
+            "SonarQube Integrated Code Quality Pipeline"
+          ]
+        },
+        {
+          setName: "Project Set 4",
+          level: "Intermediate Level (Containers & IaC)",
+          description: "Writing declarative code to stand up and containerize environments.",
+          projects: [
+            "Terraform AWS 3-Tier Architecture Provisioning",
+            "Multi-container MERN stack with Docker Compose",
+            "Automated RDS Database Migration Script run in Docker",
+            "Kubernetes Rolling Update and Rollback System"
+          ]
+        },
+        {
+          setName: "Project Set 5",
+          level: "Advanced Level (Capstone Observability)",
+          description: "Enterprise scale Kubernetes meshes with deep monitoring and security integrated.",
+          projects: [
+            "Prometheus & Grafana Cluster Monitoring Dashboard",
+            "End-to-End DevSecOps Pipeline with Trivy Image Scanning",
+            "Istio Service Mesh Traffic Routing System",
+            "Production Auto-Scaling EKS Cluster with Terraform"
+          ]
+        }
+      ],
+      guidelines: [
+        "Never hardcode secrets; use AWS Secrets Manager or HashiCorp Vault",
+        "Ensure all Terraform scripts are modular and strictly DRY",
+        "Implement least-privilege IAM policies exclusively",
+        "Ensure Docker containers can pass non-root scanning tools"
+      ],
+      learningOutcomes: [
+        "Establish highly available, fault-tolerant network topologies",
+        "Confidently navigate and orchestrate Kubernetes container pods",
+        "Achieve rapid deployment velocity with automated Jenkins/Actions pipelines",
+        "Instantly detect and resolve cluster anomalies using Grafana metrics"
+      ],
+      conclusion: "Graduates of this framework will possess the rare capability to automate robust delivery cycles, fortify enterprise deployments, and rapidly identify operational anomalies before users ever notice."
+    }
   },
   {
     id: "ai-data-science",
@@ -386,6 +733,193 @@ export const programs: Program[] = [
       "Conduct post-mortem analysis on simulated security incidents",
       "Audit cloud configurations and identity access management policies",
     ],
+    curriculum: [
+      {
+        month: 1,
+        title: "Networking & Fundamentals",
+        assessment: "Network Analysis 1",
+        weeks: [
+          {
+            week: 1,
+            title: "OSI Model & Networking",
+            topics: ["Deep dive into OSI layers", "TCP/IP suite", "Subnetting and VLANs", "Common network protocols"]
+          },
+          {
+            week: 2,
+            title: "Cryptography Basics",
+            topics: ["Symmetric vs Asymmetric encryption", "Hashing algorithms", "Public Key Infrastructure (PKI)", "Digital signatures"]
+          },
+          {
+            week: 3,
+            title: "OS Security",
+            topics: ["Linux security fundamentals", "Windows active directory security", "File system permissions", "Account policies"]
+          },
+          {
+            week: 4,
+            title: "Kali Linux Setup",
+            topics: ["Kali environment configuration", "CLI tools overview", "Basic bash scripting for security", "Anonymity and proxychains"]
+          }
+        ]
+      },
+      {
+        month: 2,
+        title: "Threat Detection & Defense",
+        assessment: "Blue Team Defense 2",
+        weeks: [
+          {
+            week: 5,
+            title: "Intro to Splunk & SIEM",
+            topics: ["Log aggregation principles", "Writing Splunk SPL queries", "Creating security dashboards", "Alert rule configuration"]
+          },
+          {
+            week: 6,
+            title: "Network Traffic Analysis",
+            topics: ["Wireshark packet capture", "Identifying malicious traffic patterns", "Intrusion Detection Systems (Snort)", "Firewall rule design"]
+          },
+          {
+            week: 7,
+            title: "Incident Response",
+            topics: ["The 6 phases of Incident Response", "Creating playbooks", "Digital forensics basics", "Chain of custody"]
+          },
+          {
+            week: 8,
+            title: "Cloud & IAM Security",
+            topics: ["AWS/Azure security benchmarks", "Zero-Trust architecture", "Role-based access", "Identity federations"]
+          }
+        ]
+      },
+      {
+        month: 3,
+        title: "Offensive Security & Pentesting",
+        assessment: "Red Team Raid 3",
+        weeks: [
+          {
+            week: 9,
+            title: "Vulnerability Scanning",
+            topics: ["Nmap advanced scanning", "Service enumeration", "Nessus automated scanning", "Interpreting CVEs"]
+          },
+          {
+            week: 10,
+            title: "Web App Security (OWASP)",
+            topics: ["SQL Injection", "Cross-Site Scripting (XSS)", "CSRF attacks", "Broken authentication"]
+          },
+          {
+            week: 11,
+            title: "AppSec Interception",
+            topics: ["Burp Suite Proxy", "Repeater and Intruder modules", "Session hijacking", "API security testing"]
+          },
+          {
+            week: 12,
+            title: "Exploitation Basics",
+            topics: ["Metasploit Framework", "Reverse shells vs Bind shells", "Privilege escalation (Linux/Windows)", "Post-exploitation"]
+          }
+        ]
+      },
+      {
+        month: 4,
+        title: "Advanced Scenarios & Capstone",
+        weeks: [
+          {
+            week: 13,
+            title: "MITRE ATT&CK Framework",
+            topics: ["Mapping adversary tactics", "Advanced persistent threats (APTs)", "Threat hunting strategies", "Using ATT&CK Navigator"]
+          },
+          {
+            week: 14,
+            title: "Malware Analysis",
+            topics: ["Static vs Dynamic analysis", "Sandbox environments", "Reverse engineering basics", "Ransomware behavior"]
+          },
+          {
+            week: 15,
+            title: "Red vs Blue Simulations",
+            topics: ["Purple teaming operations", "Tabletop exercises", "Reporting and remediation", "Technical interview prep"]
+          },
+          {
+            week: 16,
+            title: "Final Capstone",
+            topics: ["Simulated enterprise breach response", "Pen-test report writing", "Executive presentation", "Certification prep mapping"]
+          }
+        ]
+      }
+    ],
+    projectsFramework: {
+      overview: "The Cybersecurity project framework bridges theoretical threat knowledge with entirely hands-on offensive operations and rigorous SOC-level defensive deployments.",
+      stages: [
+        "Set 1 & 2: Reconnaissance and Network Defense",
+        "Set 3 & 4: Application Exploitation and SIEM Detection",
+        "Set 5: Enterprise-Grade Purple Team Operations"
+      ],
+      sets: [
+        {
+          setName: "Project Set 1",
+          level: "Foundational Level (Reconnaissance)",
+          description: "Focus on non-destructive data gathering and basic network topography mapping.",
+          projects: [
+            "Corporate OSINT Profiling Report",
+            "Nmap Subnet Topology Discovery",
+            "Open-Source Phishing Campaign Analysis",
+            "DNS Record Spoofing Investigation"
+          ]
+        },
+        {
+          setName: "Project Set 2",
+          level: "Foundational Level (Cryptography & Compliance)",
+          description: "Understanding protocols, encryption, and regulatory implementation.",
+          projects: [
+            "RSA Protocol Implementation Script",
+            "GDPR Compliance Audit on E-commerce Dataset",
+            "Custom File Integrity Monitor (FIM)",
+            "Wireshark SSL/TLS Decryption Lab"
+          ]
+        },
+        {
+          setName: "Project Set 3",
+          level: "Intermediate Level (Web Exploitation)",
+          description: "Actively exploiting OWASP vulnerabilities in deliberately vulnerable sandboxes.",
+          projects: [
+            "Blind SQL Injection Database Dump",
+            "Stored XSS Payload Execution Lab",
+            "Burp Suite Authentication Bypass",
+            "Unrestricted File Upload Remote Code Execution"
+          ]
+        },
+        {
+          setName: "Project Set 4",
+          level: "Intermediate Level (Defense & SOC)",
+          description: "Deploying detection mechanisms to catch the exact exploits built in Set 3.",
+          projects: [
+            "Splunk Dashboard for Brute-Force Detection",
+            "Snort IDS Custom Rule Writing",
+            "Linux Ransomware Behavior Sandbox",
+            "AWS IAM Privilege Escalation Detection System"
+          ]
+        },
+        {
+          setName: "Project Set 5",
+          level: "Advanced Level (Capstone Pwn & Defend)",
+          description: "End-to-end holistic cyber operation requiring both breaching a system and writing the incident response report.",
+          projects: [
+            "Active Directory Golden Ticket Exploitation & Mitigation",
+            "Zero-Day Malware Reverse Engineering Report",
+            "Full-Scale Penetration Test on HackTheBox Environment",
+            "Enterprise Cloud Breach Post-Mortem Analysis"
+          ]
+        }
+      ],
+      guidelines: [
+        "All offensive operations must be conducted strictly within assigned safe-haven sandboxes.",
+        "Documentation must follow industry-standard CVSS scoring methodologies.",
+        "Include remediation steps for every successful exploit demonstrated.",
+        "Never run scans against unauthorized public infrastructure."
+      ],
+      learningOutcomes: [
+        "Operate industry-standard offensive suites like Kali, Burp, and Metasploit.",
+        "Deploy and configure enterprise SIEM systems like Splunk.",
+        "Translate cyber risk into business-level reporting.",
+        "Engineer secure infrastructures following the MITRE ATT&CK mitigation guidelines."
+      ],
+      conclusion: "This highly practical curriculum forged in adversarial environments ensures graduates don't just understand security theoretically — they can breach, defend, and document at an enterprise grade."
+    }
   },
   {
     id: "quantum-computing",
@@ -414,6 +948,167 @@ export const programs: Program[] = [
       "Analyze error rates, decoherence, and noise in quantum circuits",
       "Research applications of quantum machine learning and cryptography",
     ],
+    curriculum: [
+      {
+        month: 1,
+        title: "Quantum Mechanics & Basics",
+        assessment: "Logic Assessment 1",
+        weeks: [
+          {
+            week: 1,
+            title: "Linear Algebra & Vectors",
+            topics: ["Complex numbers", "Dirac Bra-Ket notation", "Matrices and unitaries", "Tensor products"]
+          },
+          {
+            week: 2,
+            title: "Quantum Postulates",
+            topics: ["Wavefunctions", "Measurement collapse", "Bloch sphere representation", "Superposition"]
+          },
+          {
+            week: 3,
+            title: "Single Qubit Gates",
+            topics: ["Pauli X, Y, Z gates", "Hadamard gate", "Phase gates", "Constructing basic circuits"]
+          },
+          {
+            week: 4,
+            title: "Entanglement & Multi-Qubits",
+            topics: ["CNOT and Bell states", "Quantum teleportation protocol", "Superdense coding", "No-cloning theorem"]
+          }
+        ]
+      },
+      {
+        month: 2,
+        title: "Algorithm Architecture",
+        assessment: "Circuit Assessment 2",
+        weeks: [
+          {
+            week: 5,
+            title: "Intro to Qiskit",
+            topics: ["IBM Quantum Experience UI", "Building circuits in Python", "Running on real hardware vs simulators", "Transpilation fundamentals"]
+          },
+          {
+            week: 6,
+            title: "Foundational Algorithms",
+            topics: ["Deutsch-Jozsa algorithm", "Bernstein-Vazirani algorithm", "Simon's period-finding", "Phase kickback concepts"]
+          },
+          {
+            week: 7,
+            title: "Grover's Algorithm",
+            topics: ["Unstructured search", "Amplitude amplification", "Oracle construction", "Implementation in Qiskit"]
+          },
+          {
+            week: 8,
+            title: "Shor's Algorithm Basics",
+            topics: ["Quantum Fourier Transform (QFT)", "Phase estimation", "Factoring mechanics", "Cryptographic implications"]
+          }
+        ]
+      },
+      {
+        month: 3,
+        title: "Applications & QML",
+        assessment: "Capstone Research",
+        weeks: [
+          {
+            week: 9,
+            title: "Quantum Error & Noise",
+            topics: ["Decoherence and T1/T2 times", "Quantum Error Correction (QEC)", "Surface codes", "Mitigation techniques"]
+          },
+          {
+            week: 10,
+            title: "Quantum Chemistry Simulation",
+            topics: ["VQE (Variational Quantum Eigensolver)", "Molecular ground state simulation", "Fermion-to-Qubit mapping", "Using Qiskit Nature"]
+          },
+          {
+            week: 11,
+            title: "Quantum Machine Learning",
+            topics: ["Quantum Support Vector Machines", "Parameterized circuits", "Data encoding (Angle, Amplitude)", "Using PennyLane"]
+          },
+          {
+            week: 12,
+            title: "Capstone Implementation",
+            topics: ["Algorithm optimization", "Running on large IBM topologies", "Research documentation", "Industry applicability presentation"]
+          }
+        ]
+      }
+    ],
+    projectsFramework: {
+      overview: "The Quantum Computing track challenges students to transcend classical limits, moving from basic simulation of atomic logic to implementing algorithms that threaten modern cryptography.",
+      stages: [
+        "Set 1 & 2: Theoretical Simulation and Multi-Qubit Logic",
+        "Set 3 & 4: Classic Quantum Algorithms and HW Deployment",
+        "Set 5: Variational Models and Machine Learning integration"
+      ],
+      sets: [
+        {
+          setName: "Project Set 1",
+          level: "Foundational Level (Single Qubits)",
+          description: "Establishing deep comfort with pure quantum mechanics and mathematical notation.",
+          projects: [
+            "Bloch Sphere Visualization Toolkit",
+            "Random Number Generator via Superposition",
+            "Dirac Notation Parser in Python",
+            "Pauli Gate Transformation Simulator"
+          ]
+        },
+        {
+          setName: "Project Set 2",
+          level: "Foundational Level (Entanglement)",
+          description: "Building systems that exhibit non-classical correlation across distances.",
+          projects: [
+            "Quantum Teleportation Circuit via Qiskit",
+            "Bell State Entanglement Prover",
+            "Superdense Coding Transmission Protocol",
+            "CHSH Inequality Violation Simulator"
+          ]
+        },
+        {
+          setName: "Project Set 3",
+          level: "Intermediate Level (Core Algorithms)",
+          description: "Executing mathematical impossibilities (in classical bounds) using amplitude amplification.",
+          projects: [
+            "Grover's Search on a 4-Qubit Database",
+            "Deutsch-Jozsa Constant/Balanced Evaluator",
+            "Quantum Phase Estimation Circuit",
+            "Quantum Fourier Transform Arithmetic Unit"
+          ]
+        },
+        {
+          setName: "Project Set 4",
+          level: "Intermediate Level (Hardware & Noise)",
+          description: "Adapting theoretical circuits to survive real-world decoherence on actual IBM/IonQ superconducting chips.",
+          projects: [
+            "Error Mitigation via Richardson Extrapolation",
+            "Bit-Flip Code Implementation",
+            "Transpilation Optimizer for Specific IBM Hardware Topologies",
+            "Decoherence Time (T1/T2) Measurement Lab"
+          ]
+        },
+        {
+          setName: "Project Set 5",
+          level: "Advanced Level (Capstone QAOA & QML)",
+          description: "Cutting-edge hybrid quantum-classical algorithms applied to chemistry and optimization domains.",
+          projects: [
+            "VQE Simulation of a Lithium Hydride Molecule",
+            "Quantum Approximate Optimization Algorithm (QAOA) for MaxCut",
+            "Quantum SVM for Image Classification (PennyLane)",
+            "Shor's Algorithm Factory Simulation (Small Integer Prime Factorization)"
+          ]
+        }
+      ],
+      guidelines: [
+        "Ensure all circuits are initially tested on the local QASM simulator before cloud deployment.",
+        "Calculate and record gate depth and execution times for efficiency.",
+        "Always define your specific ansatz structure when working with VQE or QAOA.",
+        "Explain any noise-related discrepancies when analyzing hardware results."
+      ],
+      learningOutcomes: [
+        "Mathematically prove and construct highly complex entanglement architectures.",
+        "Navigate and execute advanced pipelines via IBM Quantum Cloud.",
+        "Distinguish and implement theoretical vs NISQ (Noisy Intermediate-Scale Quantum) algorithms.",
+        "Deploy hybrid classical-quantum models to solve chemistry and optimization problems."
+      ],
+      conclusion: "Graduates are uniquely equipped to bridge academic quantum mechanics with scalable software engineering, readying them for the explosive dawn of the commercial quantum computing era."
+    }
   },
   {
     id: "machine-learning",

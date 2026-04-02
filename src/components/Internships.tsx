@@ -42,9 +42,7 @@ export default function Internships() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 xl:gap-12 w-full">
-          {programs
-            .filter((p) => !["data-engineering", "machine-learning"].includes(p.id))
-            .map((program, i) => {
+          {programs.map((program, i) => {
             const Icon = iconMap[program.id] ?? BrainCircuit;
 
             return (
