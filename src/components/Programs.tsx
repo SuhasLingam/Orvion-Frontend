@@ -41,7 +41,7 @@ export default function Programs() {
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 xl:gap-12 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 xl:gap-7 w-full">
           {programs.map((program, i) => {
             const Icon = iconMap[program.id] ?? BrainCircuit;
 
@@ -59,32 +59,31 @@ export default function Programs() {
                   <div className="h-full w-full rounded-[24px] rounded-tr-[100px] p-[4px] bg-gradient-to-tr from-[#E2E8F0] via-[#E2E8F0]/30 to-[#305EFF] shadow-[0_8px_30px_rgba(0,0,0,0.06)] flex flex-col">
 
                     {/* Inner Card Content */}
-                    <div className="h-full bg-[#f8fafc] rounded-[20px] rounded-tr-[96px] p-6 sm:px-8 sm:py-7 flex flex-col items-start text-left relative overflow-hidden">
+                    <div className="h-full bg-[#f8fafc] rounded-[20px] rounded-tr-[96px] p-5 sm:px-6 sm:py-5 flex flex-col items-start text-left relative overflow-hidden">
 
                       {/* Grey Icon Circle */}
-                      <div className="w-[64px] h-[64px] bg-[#D1D5DB]/60 rounded-full flex items-center justify-center mb-6">
-                        <Icon className="w-7 h-7 text-[#9CA3AF]" strokeWidth={2} />
+                      <div className="w-[48px] h-[48px] bg-[#D1D5DB]/60 rounded-full flex items-center justify-center mb-4">
+                        <Icon className="w-5 h-5 text-[#9CA3AF]" strokeWidth={2} />
                       </div>
 
-                      <h3 className="text-[24px] sm:text-[26px] font-bold text-[#0B0F19] mb-2 leading-tight font-heading">
+                      <h3 className="text-[18px] sm:text-[20px] font-bold text-[#0B0F19] mb-1.5 leading-tight font-heading">
                         {program.title} {program.titleHighlight}
                       </h3>
 
-                      <p className="text-[14px] sm:text-[15px] text-[#4B5563] font-medium leading-relaxed mb-8 line-clamp-2">
+                      <p className="text-[13px] text-[#4B5563] font-medium leading-relaxed mb-5 line-clamp-2">
                         {program.description}
                       </p>
 
                       {/* Bottom Section */}
                       <div className="w-full flex justify-between items-end mt-auto">
-                        <div className="bg-[#B9CAE8]/50 border border-[#94A3B8]/20 text-[#0B0F19] text-[13px] font-medium px-5 py-2 
-rounded-lg">
+                        <div className="bg-[#B9CAE8]/50 border border-[#94A3B8]/20 text-[#0B0F19] text-[12px] font-medium px-4 py-1.5 rounded-lg">
                           {program.duration}
                         </div>
 
                         {/* Floating Action Button */}
-                        <div className="w-[46px] h-[46px] rounded-full bg-[#111827] flex items-center justify-center relative overflow-hidden shadow-md">
+                        <div className="w-[38px] h-[38px] rounded-full bg-[#111827] flex items-center justify-center relative overflow-hidden shadow-md">
                           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(48,94,255,0.8)_0%,transparent_60%)] opacity-90" />
-                          <ArrowRight className="w-5 h-5 text-white relative z-10" />
+                          <ArrowRight className="w-4 h-4 text-white relative z-10" />
                         </div>
                       </div>
 
