@@ -23,8 +23,9 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
       <ProgramTechnologies technologies={program.technologies} />
       <ProgramOutcomes outcomes={program.outcomes} />
       
-      {/* Conditionally render if curriculum exists */}
-      {program.curriculum && <ProgramCurriculum curriculum={program.curriculum} />}
+      {program.curriculum && (
+        <ProgramCurriculum curriculum={program.curriculum} programId={program.id} />
+      )}
       {program.projectsFramework && <ProgramProjects framework={program.projectsFramework} />}
       
       <ProgramCTA />

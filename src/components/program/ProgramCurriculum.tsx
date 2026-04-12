@@ -25,8 +25,10 @@ const PYRAMIDS_3M: string[] = [
 
 export default function ProgramCurriculum({
   curriculum,
+  programId: _programId,
 }: {
   curriculum: Month[];
+  programId?: string;
 }) {
   const [activeMonth, setActiveMonth] = useState(0);
   const [openWeeks, setOpenWeeks] = useState<Set<number>>(new Set([0]));
@@ -133,8 +135,8 @@ export default function ProgramCurriculum({
                 <motion.div
                   key={activeMonth}
                   initial={{ opacity: 0, scale: 0.96, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, scale: 1,   filter: "blur(0px)" }}
-                  exit={{    opacity: 0, scale: 1.05, filter: "blur(8px)" }}
+                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, scale: 1.05, filter: "blur(8px)" }}
                   transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
                   className="absolute inset-0 w-full h-full"
                   style={{

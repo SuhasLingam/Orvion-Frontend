@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle2, ArrowLeft, Palette, Cloud, BrainCircuit, Shield, Atom, Network, Database, type LucideIcon } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Palette, Cloud, BrainCircuit, Shield, Atom, Network, Database, PlayCircle, type LucideIcon } from "lucide-react";
 import type { Program } from "~/data/programs";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -103,6 +103,14 @@ export default function ProgramHero({ program }: { program: Program }) {
               >
                 Get Syllabus
               </button>
+              <Link
+                href={`/programs/${program.id}/learn`}
+                className="inline-flex items-center gap-2 bg-[#0B0F19] text-white px-8 py-3.5 rounded-xl font-semibold text-[16px] hover:bg-[#305EFF] hover:shadow-[0_8px_20px_rgba(48,94,255,0.25)] hover:-translate-y-0.5 transition-all duration-300"
+                style={{ fontFamily: "SF Pro Display, sans-serif" }}
+              >
+                <PlayCircle className="w-5 h-5" />
+                Access Content
+              </Link>
             </div>
           </motion.div>
 
@@ -116,7 +124,7 @@ export default function ProgramHero({ program }: { program: Program }) {
             <div className="w-full max-w-md bg-[#F1F5F9] border border-[#E2E8F0] rounded-[24px] p-8 shadow-[0_12px_36px_rgba(0,0,0,0.06)] relative overflow-hidden">
               {/* Subtle top glare/gradient */}
               <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
-              
+
               {/* Card header */}
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#E2E8F0]">
