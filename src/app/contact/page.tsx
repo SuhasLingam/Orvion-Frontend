@@ -20,8 +20,8 @@ const contactCards = [
   {
     icon: MapPin,
     title: "Find Us",
-    value: "Ongole",
-    sub: "India",
+    value: "7-1174(1) subbaiah colony",
+    sub: "Near MM road & near Power office, south bypass, Ongole 523002 -AP",
   },
 ];
 

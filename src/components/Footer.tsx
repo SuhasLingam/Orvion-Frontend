@@ -65,8 +65,8 @@ export default function Footer() {
                 +91 79-97226888
               </li>
               <li className="text-[15px] font-semibold text-[#4B5563] leading-relaxed">
-                Ongole,<br />
-                India
+                7-1174(1) subbaiah colony, Near MM road & near Power office,<br />
+                south bypass, Ongole 523002 -AP
               </li>
             </ul>
           </div>
