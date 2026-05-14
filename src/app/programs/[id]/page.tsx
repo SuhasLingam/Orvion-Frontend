@@ -28,7 +28,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
       )}
       {program.projectsFramework && <ProgramProjects framework={program.projectsFramework} />}
       
-      <ProgramCTA />
+      <ProgramCTA program={program} />
       <RealResults />
     </div>
   );

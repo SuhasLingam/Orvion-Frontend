@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +16,22 @@ const navLinks = [
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    void import("~/utils/supabase/client").then(({ createClient }) => {
+      const supabase = createClient();
+      void supabase.auth.getSession().then(({ data }) => setIsAuthenticated(!!data.session));
+      supabase.auth.onAuthStateChange((_event, session) => setIsAuthenticated(!!session));
+    });
+  }, []);
+
+  const pathname = usePathname();
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
 
   return (
     <div className="sticky top-0 left-0 right-0 z-50 px-3 pt-3 w-full flex justify-center pointer-events-none">
@@ -43,14 +60,23 @@ export default function Navbar() {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex shrink-0">
-            <button
-              onClick={() => window.dispatchEvent(new Event("openEnrollModal"))}
-              className="bg-orvion-primary text-white px-8 py-3 rounded-[100px] font-medium text-[15px] hover:shadow-[0_8px_15px_rgba(48,94,255,0.2)] hover:-translate-y-0.5 transition-all duration-300"
+          <div className="hidden md:flex shrink-0 items-center gap-6">
+            {mounted && isAuthenticated && (
+              <Link
+                href="/dashboard"
+                className="text-orvion-nav-text font-medium text-[15px] hover:text-orvion-primary transition-colors"
+                style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
+              >
+                Dashboard
+              </Link>
+            )}
+            <Link
+              href="/#programs"
+              className="flex items-center justify-center bg-orvion-primary text-white px-8 py-3 rounded-[100px] font-medium text-[15px] hover:shadow-[0_8px_15px_rgba(48,94,255,0.2)] hover:-translate-y-0.5 transition-all duration-300"
               style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
             >
-              Enroll Now
-            </button>
+              Explore Programs
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -88,17 +114,25 @@ export default function Navbar() {
                   {link.text}
                 </Link>
               ))}
-              <div className="pt-6 px-4">
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    window.dispatchEvent(new Event("openEnrollModal"));
-                  }}
+              <div className="pt-6 px-4 space-y-3">
+                {mounted && isAuthenticated && (
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className="flex justify-center w-full border border-[#E5E9F0] text-orvion-nav-text hover:text-orvion-primary px-6 py-4 rounded-[100px] font-medium text-[17px] hover:bg-black/5 transition-all"
+                    style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                <Link
+                  href="/#programs"
+                  onClick={() => setIsOpen(false)}
                   className="flex justify-center w-full bg-orvion-primary text-white px-6 py-4 rounded-[100px] font-medium text-[17px] hover:shadow-md transition-all active:scale-95"
                   style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
                 >
-                  Enroll Now
-                </button>
+                  Explore Programs
+                </Link>
               </div>
             </div>
           </motion.div>

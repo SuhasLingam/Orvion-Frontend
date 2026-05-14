@@ -1,8 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { Program } from "~/data/programs";
+import Link from "next/link";
 
-export default function ProgramCTA() {
+export default function ProgramCTA({ program }: { program: Program }) {
   return (
     <section className="w-full px-3 py-24 bg-white">
       <div className="max-w-[850px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-8 items-center">
@@ -63,12 +65,12 @@ export default function ProgramCTA() {
           <p className="text-[17px] font-medium text-[#1A2638] leading-[1.65] mb-6 max-w-[280px]">
             Join thousands of students who transformed their careers with Orvion Academy
           </p>
-          <button
-            onClick={() => window.dispatchEvent(new Event("openEnrollModal"))}
-            className="inline-flex bg-[#305EFF] text-white px-9 py-3 rounded-[10px] font-semibold text-[15px] hover:bg-blue-600 hover:shadow-[0_8px_20px_rgba(48,94,255,0.25)] transition-all duration-300"
+          <Link
+            href={`/checkout?program=${program.id}`}
+            className="w-full sm:w-auto inline-flex items-center justify-center bg-[#305EFF] text-white px-8 py-4 rounded-xl font-semibold text-[16px] hover:shadow-[0_8px_20px_rgba(48,94,255,0.25)] hover:-translate-y-0.5 transition-all duration-300"
           >
             Enroll Now
-          </button>
+          </Link>
         </motion.div>
 
       </div>

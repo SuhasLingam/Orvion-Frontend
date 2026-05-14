@@ -37,12 +37,12 @@ export default function Hero() {
 
           {/* Buttons */}
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-24">
-            <button
-              onClick={() => window.dispatchEvent(new Event("openEnrollModal"))}
-              className="w-full sm:w-[170px] bg-[#305EFF] text-white py-3 rounded-xl font-semibold text-[17px] hover:bg-blue-600 transition-colors shadow-sm"
+            <Link 
+              href="/#programs"
+              className="bg-orvion-primary text-white px-8 py-4 rounded-[100px] font-medium text-[16px] flex items-center justify-center gap-2 hover:shadow-[0_8px_20px_rgba(48,94,255,0.25)] hover:-translate-y-0.5 transition-all duration-300"
             >
-              Enroll Now
-            </button>
+              Explore Programs
+            </Link>
             <Link
               href="/contact"
               className="w-full sm:w-[170px] bg-white text-[#305EFF] border-[1.5px] border-[#305EFF] py-3 rounded-xl font-semibold text-[17px] hover:bg-blue-50 transition-colors shadow-sm"
