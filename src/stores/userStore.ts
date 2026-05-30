@@ -1,5 +1,11 @@
 import { create } from "zustand";
-import { createClient } from "~/utils/supabase/client";
+import {
+  apiGetMe,
+  apiGetReadiness,
+  apiGetBadges,
+  type MeResponse,
+  type BadgeItem,
+} from "~/utils/api";
 
 export interface Badge {
   id: string;
@@ -24,6 +30,7 @@ interface UserState {
   xp: number;
   xpToNextLevel: number;
   streak: number;
+  lastActive: string | null;
   lastActiveMinutesAgo: number;
   cohortRank: number;
   joinedAt: string;
@@ -31,44 +38,35 @@ interface UserState {
   weeklyGoal: { target: number; completed: number; label: string; resetsIn: string };
   xpHistory: { week: string; xp: number }[];
   activityHeatmap: { date: string; count: number }[];
-  
+  isLoading: boolean;
+  fetchError: string | null;
+
   // Actions
   fetchProfile: () => Promise<void>;
   addXP: (amount: number) => void;
 }
 
-interface Profile {
-  id: string;
-  name: string | null;
-  email: string;
-  program: string;
-  program_id: string;
-  level: number;
-  xp: number;
-  xp_to_next_level: number;
-  streak: number;
-  readiness_score: number;
-  joined_at: string;
+function getLevelLabel(level: number): string {
+  if (level >= 20) return "Expert";
+  if (level >= 10) return "Advanced";
+  if (level >= 5) return "Intermediate";
+  return "Novice";
 }
 
-interface UserActivity {
-  date: string;
-  activity_count: number;
+function getReadinessBadge(score: number): string {
+  if (score >= 90) return "Top Talent";
+  if (score >= 70) return "Ready";
+  if (score >= 40) return "Rising Star";
+  return "Beginner";
 }
 
-interface BadgeRow {
-  id: string;
-  title: string;
-  icon: string;
-  rarity: string;
+function formatLastActive(isoString: string | null): number {
+  if (!isoString) return 0;
+  const diff = Date.now() - new Date(isoString).getTime();
+  return Math.max(0, Math.floor(diff / 60000));
 }
 
-interface UserBadgeRow {
-  badge_id: string;
-  earned_at: string;
-}
-
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState>((set, _get) => ({
   id: null,
   name: "Student",
   initials: "ST",
@@ -82,6 +80,7 @@ export const useUserStore = create<UserState>((set) => ({
   xp: 0,
   xpToNextLevel: 500,
   streak: 0,
+  lastActive: null,
   lastActiveMinutesAgo: 0,
   cohortRank: 0,
   joinedAt: "Just now",
@@ -89,221 +88,111 @@ export const useUserStore = create<UserState>((set) => ({
   weeklyGoal: { target: 1000, completed: 0, label: "Earn 1000 XP", resetsIn: "7d" },
   xpHistory: [],
   activityHeatmap: [],
+  isLoading: false,
+  fetchError: null,
 
   fetchProfile: async () => {
-    const supabase = createClient();
-    const { data: sessionData } = await supabase.auth.getSession();
-    const session = sessionData.session;
-    if (!session) return;
+    set({ isLoading: true, fetchError: null });
 
-    const user = session.user;
-    
-    // Fetch profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single() as { data: Profile | null };
-
-    const userName = (profile?.name ?? (user.user_metadata?.name as string | undefined)) ?? "Student";
-    
-    if (profile) {
-      set({
-        id: profile.id,
-        name: userName,
-        initials: userName.substring(0, 2).toUpperCase(),
-        email: profile.email,
-        program: profile.program,
-        programId: profile.program_id,
-        level: profile.level,
-        xp: profile.xp,
-        xpToNextLevel: profile.xp_to_next_level,
-        streak: profile.streak,
-        readinessScore: profile.readiness_score,
-      });
-    } else {
-      // Fallback if trigger hasn't fired or user is completely new
-      set({
-        id: user.id,
-        name: userName,
-        initials: userName.substring(0, 2).toUpperCase(),
-        email: user.email ?? "",
-      });
-    }
-
-    // Fetch all badges and cross-reference with user_badges
-    const { data: allBadges } = await supabase.from('badges').select('*') as { data: BadgeRow[] | null };
-    const { data: userBadges } = await supabase
-      .from('user_badges')
-      .select('badge_id, earned_at')
-      .eq('user_id', user.id) as { data: UserBadgeRow[] | null };
-
-    if (allBadges && allBadges.length > 0) {
-      const earnedMap = new Map(userBadges?.map(ub => [ub.badge_id, ub.earned_at]) ?? []);
-      const mappedBadges: Badge[] = allBadges.map(b => ({
-        id: b.id,
-        title: b.title,
-        icon: b.icon,
-        rarity: b.rarity as "common" | "rare" | "epic" | "legendary",
-        isEarned: earnedMap.has(b.id),
-        earnedAt: earnedMap.get(b.id) ?? undefined
-      }));
-      
-      set({ badges: mappedBadges });
-    } else {
-      // Fallback mock badges if DB is empty
-      set({
-        badges: [
-          { id: "1", title: "First Step", icon: "🚀", isEarned: true, rarity: "common", earnedAt: "Oct 12" },
-          { id: "2", title: "Fast Learner", icon: "🧠", isEarned: true, rarity: "rare", earnedAt: "Nov 03" },
-          { id: "3", title: "Bug Hunter", icon: "🐛", isEarned: false, rarity: "epic" },
-          { id: "4", title: "Design Guru", icon: "🎨", isEarned: false, rarity: "rare" },
-          { id: "5", title: "Code Ninja", icon: "⚔️", isEarned: false, rarity: "legendary" },
-          { id: "6", title: "Team Player", icon: "🤝", isEarned: true, rarity: "common", earnedAt: "Dec 01" },
-          { id: "7", title: "7-Day Streak", icon: "🔥", isEarned: true, rarity: "epic", earnedAt: "Dec 15" },
-          { id: "8", title: "Top 10%", icon: "👑", isEarned: false, rarity: "legendary" },
-        ]
-      });
-    }
-
-    // Dynamic labels based on profile
-    let label = "Novice";
-    const level = profile?.level ?? 1;
-    if (level >= 5) label = "Intermediate";
-    if (level >= 10) label = "Advanced";
-    if (level >= 20) label = "Expert";
-    
-    let badgeLabel = "Beginner";
-    const rScore = profile?.readiness_score ?? 0;
-    if (rScore >= 40) badgeLabel = "Rising Star";
-    if (rScore >= 70) badgeLabel = "Ready";
-    if (rScore >= 90) badgeLabel = "Top Talent";
-    
-    set({ 
-      levelLabel: label,
-      readinessBadge: badgeLabel,
-      cohortRank: Math.min(99, Math.max(1, Math.floor(rScore * 0.8 + 10)))
-    });
-
-    // Calculate approximate lifetime XP for the graph (approximation logic removed as unused)
-
-    // Generate XP History based on enrollment date
-    const enrollmentDate = profile?.joined_at ? new Date(profile.joined_at) : new Date();
-    const today = new Date();
-    const diffTime = Math.abs(today.getTime() - enrollmentDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const totalWeeks = Math.max(1, Math.ceil(diffDays / 7));
-
-    // Fetch actual activity for heatmap AND graph
-    const { data: activityData } = await supabase
-      .from('user_activity')
-      .select('date, activity_count')
-      .eq('user_id', user.id)
-      .order('date', { ascending: true }) as { data: UserActivity[] | null };
-
-    // Supplement with lesson completion dates to ensure heatmap is never empty for active users
-    const { data: lessonProgress } = await supabase
-      .from('user_learning_progress')
-      .select('completed_at')
-      .eq('user_id', user.id)
-      .eq('status', 'completed') as { data: { completed_at: string | null }[] | null };
-
-    const combinedActivity: UserActivity[] = [...(activityData ?? [])];
-    lessonProgress?.forEach(lp => {
-      if (lp.completed_at) {
-        const dateStr = lp.completed_at.split('T')[0]!;
-        const existing = combinedActivity.find(a => a.date === dateStr);
-        if (existing) {
-          existing.activity_count = (existing.activity_count ?? 0) + 1;
-        } else {
-          combinedActivity.push({ date: dateStr, activity_count: 1 });
-        }
+    try {
+      // ── 1. /auth/me ────────────────────────────────────────────────────
+      let me: MeResponse;
+      try {
+        me = await apiGetMe();
+      } catch (err) {
+        console.error("[userStore] /auth/me failed:", err);
+        set({ isLoading: false, fetchError: "Could not load profile from backend." });
+        return;
       }
-    });
 
-    // Generate a continuous heatmap for the last 6 months (approx 24 weeks)
-    const heatmapData: { date: string, count: number }[] = [];
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setDate(today.getDate() - (24 * 7));
-    
-    // Start from the earlier of enrollment or 6 months ago
-    const startDate = enrollmentDate < sixMonthsAgo ? enrollmentDate : sixMonthsAgo;
-    const tempDate = new Date(startDate);
-    
-    // Normalize to the start of that week (Sunday)
-    tempDate.setHours(0, 0, 0, 0);
-    tempDate.setDate(tempDate.getDate() - tempDate.getDay());
+      const userName =
+        (me.name?.trim() || (me.email ? me.email.split("@")[0] : undefined)) ??
+        "Student";
 
-    // Normalize today to midnight for comparison
-    const endOfDay = new Date(today);
-    endOfDay.setHours(23, 59, 59, 999);
+      const xpToNext = 500 * me.level; // simple progression
+      const minutesAgo = formatLastActive(me.last_active ?? null);
 
-    set({ joinedAt: enrollmentDate.toLocaleDateString() }); // Use enrollmentDate to avoid unused warning
+      const levelLabel = getLevelLabel(me.level);
 
-    while (tempDate <= endOfDay) {
-      const dateStr = tempDate.toISOString().split('T')[0];
-      if (dateStr) {
-        // Robust matching: compare raw strings from DB if possible
-        const actual = combinedActivity.find(a => {
-          if (!a.date) return false;
-          // DB dates are YYYY-MM-DD
-          const dbDateStr = typeof a.date === 'string' ? a.date.split('T')[0] : new Date(a.date).toISOString().split('T')[0];
-          return dbDateStr === dateStr;
-        });
-        
-        heatmapData.push({
-          date: dateStr,
-          count: actual?.activity_count ?? 0
-        });
-      }
-      tempDate.setDate(tempDate.getDate() + 1);
-    }
+      // Generate XP history based on joined_at and current xp
+      const enrollmentDate = me.joined_at ? new Date(me.joined_at) : new Date();
+      const today = new Date();
+      const diffDays = Math.max(
+        1,
+        Math.ceil(
+          Math.abs(today.getTime() - enrollmentDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+      );
+      const totalWeeks = Math.max(1, Math.ceil(diffDays / 7));
 
-    set({ activityHeatmap: heatmapData });
-
-    if (combinedActivity.length > 0) {
-      // Reconstruct XP History from activity
-      let currentCumulativeXp = 0;
-      const history: { week: string; xp: number }[] = [];
-      
-      // Group activity by week starting from enrollment
+      const xpHistory: { week: string; xp: number }[] = [];
       for (let w = 0; w < totalWeeks; w++) {
-        const weekStart = new Date(enrollmentDate);
-        weekStart.setDate(weekStart.getDate() + (w * 7));
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 7);
-
-        const weekActivity = combinedActivity.filter(a => {
-          if (!a.date) return false;
-          const d = new Date(a.date);
-          return d >= weekStart && d < weekEnd;
-        });
-
-        // Simple estimation: 50 XP per activity count
-        const weekGain = weekActivity.reduce((acc, curr) => acc + ((curr.activity_count ?? 0) * 50), 0);
-        currentCumulativeXp += weekGain;
-
-        history.push({
+        xpHistory.push({
           week: `W${w + 1}`,
-          xp: Math.min(profile?.xp ?? 0, currentCumulativeXp)
+          xp: w === totalWeeks - 1 ? me.xp : Math.round((me.xp / totalWeeks) * (w + 1)),
         });
       }
-      
-      // Ensure the last point matches current XP exactly
-      const lastPoint = history[history.length - 1];
-      if (lastPoint) {
-        lastPoint.xp = profile?.xp ?? 0;
+
+      set({
+        id: me.id,
+        name: userName,
+        initials: userName.substring(0, 2).toUpperCase(),
+        email: me.email,
+        program: me.program ?? "Full-Stack Developer",
+        programId: me.program_id ?? "fsd",
+        level: me.level,
+        levelLabel,
+        xp: me.xp,
+        xpToNextLevel: xpToNext,
+        streak: me.streak_days,
+        lastActive: me.last_active ?? null,
+        lastActiveMinutesAgo: minutesAgo,
+        joinedAt: me.joined_at
+          ? new Date(me.joined_at).toLocaleDateString()
+          : "Just now",
+        weeklyGoal: {
+          target: 1000,
+          completed: Math.min(me.xp, 1000),
+          label: "Earn 1000 XP",
+          resetsIn: "7d",
+        },
+        xpHistory,
+      });
+
+      // ── 2. /readiness-score ────────────────────────────────────────────
+      try {
+        const readiness = await apiGetReadiness();
+        const rScore = readiness.score ?? 0;
+        set({
+          readinessScore: rScore,
+          readinessBadge: getReadinessBadge(rScore),
+          cohortRank: Math.min(99, Math.max(1, Math.floor(rScore * 0.8 + 10))),
+        });
+      } catch (err) {
+        console.warn("[userStore] /readiness-score failed (non-fatal):", err);
       }
 
-      set({ xpHistory: history });
-    } else {
-      // Fallback: If no activity records, just show a single point or enrollment-to-now
-      set({ 
-        xpHistory: [
-          { week: 'W1', xp: profile?.xp ?? 0 }
-        ],
-        activityHeatmap: [] 
-      });
+      // ── 3. /badges ─────────────────────────────────────────────────────
+      try {
+        const badgeData: BadgeItem[] = await apiGetBadges();
+        const mappedBadges: Badge[] = badgeData.map((b) => ({
+          id: b.id,
+          title: b.title,
+          icon: b.icon,
+          rarity: b.rarity,
+          isEarned: b.is_earned,
+          earnedAt: b.earned_at,
+        }));
+        set({ badges: mappedBadges });
+      } catch (err) {
+        console.warn("[userStore] /badges failed (non-fatal):", err);
+        // keep empty badges — no fake mock data
+      }
+
+      set({ isLoading: false });
+    } catch (err) {
+      console.error("[userStore] fetchProfile unexpected error:", err);
+      set({ isLoading: false, fetchError: "Unexpected error loading profile." });
     }
   },
 
@@ -311,11 +200,12 @@ export const useUserStore = create<UserState>((set) => ({
     set((state) => {
       const newXP = state.xp + amount;
       const leveledUp = newXP >= state.xpToNextLevel;
-      // In a real app, you would also push this change back to Supabase here.
       return {
         xp: leveledUp ? newXP - state.xpToNextLevel : newXP,
         level: leveledUp ? state.level + 1 : state.level,
-        xpToNextLevel: leveledUp ? Math.floor(state.xpToNextLevel * 1.5) : state.xpToNextLevel,
+        xpToNextLevel: leveledUp
+          ? Math.floor(state.xpToNextLevel * 1.5)
+          : state.xpToNextLevel,
       };
     }),
 }));

@@ -1,52 +1,38 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { createClient } from "~/utils/supabase/client";
+import { isLoggedIn } from "~/utils/api";
 import { useUserStore } from "~/stores/userStore";
 import { useProgressStore } from "~/stores/progressStore";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [checked, setChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
-    
-    // Check initial session
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsAuthenticated(true);
-        // Fire off data fetches when logged in
-        void useUserStore.getState().fetchProfile();
-        void useProgressStore.getState().fetchProgress();
-      } else {
-        setIsAuthenticated(false);
-      }
-    });
+    const loggedIn = isLoggedIn();
+    setIsAuthenticated(loggedIn);
+    setChecked(true);
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    if (loggedIn) {
+      // Bootstrap both stores on auth confirmation
+      void useUserStore.getState().fetchProfile();
+      void useProgressStore.getState().fetchProgress();
+    }
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated === false) {
+    if (checked && !isAuthenticated) {
       router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`);
     }
-  }, [isAuthenticated, router, pathname]);
+  }, [checked, isAuthenticated, router, pathname]);
 
-  if (isAuthenticated === null) {
+  if (!checked) {
     return (
-      <div className="min-h-screen bg-[#0D1117] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#305EFF] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#305EFF] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

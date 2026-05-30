@@ -1,11 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Lock, Mail, User, Sparkles } from "lucide-react";
-import { createClient } from "~/utils/supabase/client";
-
-import { Suspense } from "react";
+import { apiLogin, saveToken } from "~/utils/api";
 
 function AuthContent() {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +11,7 @@ function AuthContent() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
@@ -28,54 +27,45 @@ function AuthContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const supabase = createClient();
+    setErrorMsg(null);
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        // ── FastAPI JWT login ──────────────────────────────────────────
+        const res = await apiLogin({ email, password });
+        saveToken(res.access_token);
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { name },
-          },
+        // ── Registration — call FastAPI register endpoint ───────────────
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+        const regRes = await fetch(`${BASE_URL}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, name }),
         });
-        if (error) throw error;
-      }
-
-      // Check for pending enrollment
-      const pendingProgram = localStorage.getItem("pending_enrollment");
-      if (pendingProgram) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
+        if (!regRes.ok) {
+          let msg = "Registration failed";
           try {
-            await fetch("/api/enroll", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ programId: pendingProgram, token: session.access_token }),
-            });
-            localStorage.removeItem("pending_enrollment");
-            localStorage.removeItem("pending_enrollment_title");
-          } catch (e: unknown) {
-            console.error("Failed to process enrollment", e);
-          }
+            const err = await regRes.json() as { detail?: string };
+            msg = err.detail ?? msg;
+          } catch { /* empty */ }
+          throw new Error(msg);
         }
+        // Auto-login after registration
+        const tokenRes = await apiLogin({ email, password });
+        saveToken(tokenRes.access_token);
       }
 
       router.replace(returnUrl);
-
     } catch (error) {
       const authError = error as { message?: string };
-      alert(authError.message ?? "An error occurred during authentication.");
+      setErrorMsg(authError.message ?? "An error occurred during authentication.");
       setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-5 font-['SF_Pro_Display'] relative overflow-hidden">
-      
+
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#305EFF]/5 rounded-full blur-3xl" />
@@ -155,6 +145,12 @@ function AuthContent() {
             />
           </div>
 
+          {errorMsg && (
+            <p className="text-[13px] font-semibold text-red-500 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+              {errorMsg}
+            </p>
+          )}
+
           <button
             type="submit"
             disabled={isLoading}
@@ -175,7 +171,7 @@ function AuthContent() {
           <p className="text-[14px] text-[#64748B] font-medium">
             {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => { setIsLogin(!isLogin); setErrorMsg(null); }}
               className="text-[#305EFF] font-bold hover:underline underline-offset-4"
             >
               {isLogin ? "Sign up" : "Sign in"}
@@ -189,11 +185,13 @@ function AuthContent() {
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="w-8 h-8 border-4 border-[#305EFF] border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+          <div className="w-8 h-8 border-4 border-[#305EFF] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
       <AuthContent />
     </Suspense>
   );

@@ -21,10 +21,9 @@ export default function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-    void import("~/utils/supabase/client").then(({ createClient }) => {
-      const supabase = createClient();
-      void supabase.auth.getSession().then(({ data }) => setIsAuthenticated(!!data.session));
-      supabase.auth.onAuthStateChange((_event, session) => setIsAuthenticated(!!session));
+    // Use FastAPI JWT token to determine auth state
+    void import("~/utils/api").then(({ isLoggedIn }) => {
+      setIsAuthenticated(isLoggedIn());
     });
   }, []);
 

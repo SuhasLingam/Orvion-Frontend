@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useUserStore } from "~/stores/userStore";
+import { useProgressStore } from "~/stores/progressStore";
 import MilestoneToast from "~/components/dashboard/MilestoneToast";
 import {
-  Star, Flame, Trophy, LayoutDashboard, Map, FolderKanban, MessageSquare, Sparkles, User, LogOut, Menu, X
+  Star, Flame, Trophy, LayoutDashboard, Map, FolderKanban,
+  MessageSquare, Sparkles, User, LogOut, Menu, X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "~/utils/supabase/client";
+import { clearToken, isLoggedIn } from "~/utils/api";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -25,14 +27,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { name, program, level, xp, streak, badges } = useUserStore();
-  const earnedBadges = badges.filter(b => b.isEarned).length;
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+  const {
+    name, program, level, xp, streak, badges,
+    fetchProfile, isLoading, fetchError, lastActiveMinutesAgo,
+  } = useUserStore();
+  const { fetchProgress } = useProgressStore();
+
+  const earnedBadges = badges.filter((b) => b.isEarned).length;
+
+  // ── Bootstrap data on mount ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isLoggedIn()) {
+      router.replace("/auth");
+      return;
+    }
+    void fetchProfile().then(() => {
+      void fetchProgress();
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLogout = () => {
+    clearToken();
     router.push("/");
   };
+
+  const lastActiveText =
+    lastActiveMinutesAgo < 2
+      ? "Last active just now"
+      : lastActiveMinutesAgo < 60
+      ? `Last active ${lastActiveMinutesAgo}m ago`
+      : `Last active ${Math.floor(lastActiveMinutesAgo / 60)}h ago`;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-['SF_Pro_Display'] flex text-[#1A202C]">
@@ -55,10 +81,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-4 py-3.5 rounded-[16px] text-[15px] font-bold transition-all flex items-center gap-3 ${active
-                  ? "bg-[#305EFF] text-white shadow-[0_4px_12px_rgba(48,94,255,0.2)]"
-                  : "text-[#7A7571] hover:bg-[#EEF2F8] hover:text-[#305EFF]"
-                  }`}
+                className={`px-4 py-3.5 rounded-[16px] text-[15px] font-bold transition-all flex items-center gap-3 ${
+                  active
+                    ? "bg-[#305EFF] text-white shadow-[0_4px_12px_rgba(48,94,255,0.2)]"
+                    : "text-[#7A7571] hover:bg-[#EEF2F8] hover:text-[#305EFF]"
+                }`}
               >
                 <item.icon className="w-5 h-5" />
                 {item.label}
@@ -79,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ── Main Content Area ── */}
       <div className="flex-grow flex flex-col min-w-0">
 
-        {/* Mobile Header & Nav (Hidden on Desktop) */}
+        {/* Mobile Header (Hidden on Desktop) */}
         <div className="md:hidden flex flex-col bg-white border-b border-[#E5E7EB] sticky top-0 z-40">
           <div className="flex items-center justify-between p-4 border-b border-[#F0ECE1]">
             <div className="flex items-center gap-3">
@@ -147,10 +174,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         key={item.href}
                         href={item.href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`px-4 py-3.5 rounded-[16px] text-[15px] font-bold transition-all flex items-center gap-3 ${active
-                          ? "bg-[#305EFF] text-white shadow-[0_4px_12px_rgba(48,94,255,0.2)]"
-                          : "text-[#4A5568] hover:bg-[#EEF2F8] hover:text-[#305EFF]"
-                          }`}
+                        className={`px-4 py-3.5 rounded-[16px] text-[15px] font-bold transition-all flex items-center gap-3 ${
+                          active
+                            ? "bg-[#305EFF] text-white shadow-[0_4px_12px_rgba(48,94,255,0.2)]"
+                            : "text-[#4A5568] hover:bg-[#EEF2F8] hover:text-[#305EFF]"
+                        }`}
                       >
                         <item.icon className="w-5 h-5" />
                         {item.label}
@@ -177,25 +205,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Header Section */}
           <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-12 min-w-0">
             <div className="min-w-0">
-              <motion.h1
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="text-3xl md:text-[38px] font-extrabold text-[#1A202C] mb-2 leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
-              >
-                Welcome back, {name}! <span className="inline-block ml-1 text-3xl md:text-4xl">👋</span>
-              </motion.h1>
+              {isLoading ? (
+                <div className="h-10 w-64 bg-[#E2E8F0] rounded-2xl animate-pulse mb-2" />
+              ) : fetchError ? (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-[14px] font-semibold rounded-xl px-4 py-3 mb-2">
+                  {fetchError}
+                </div>
+              ) : (
+                <motion.h1
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-3xl md:text-[38px] font-extrabold text-[#1A202C] mb-2 leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
+                >
+                  Welcome back, {name}! <span className="inline-block ml-1 text-3xl md:text-4xl">👋</span>
+                </motion.h1>
+              )}
               <motion.p
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
                 className="text-[#4A5568] text-[16px] font-medium"
               >
                 {program} • Level {level}
+                {!isLoading && (
+                  <span className="ml-3 text-[13px] text-[#94A3B8]">{lastActiveText}</span>
+                )}
               </motion.p>
             </div>
 
             <motion.div
-              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
               className="flex flex-nowrap items-center gap-3 overflow-x-auto no-scrollbar pb-2 xl:pb-0 w-full xl:w-auto"
             >
-              {/* Stat Pills */}
+              {/* XP Pill */}
               <div className="bg-white rounded-[20px] px-5 py-3 flex items-center gap-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#E2E8F0]">
                 <div className="w-11 h-11 rounded-full bg-[#305EFF] flex items-center justify-center shrink-0">
                   <Star className="w-5 h-5 text-white" fill="currentColor" />
@@ -206,6 +250,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
 
+              {/* Streak Pill */}
               <div className="bg-white rounded-[20px] px-5 py-3 flex items-center gap-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#E2E8F0]">
                 <div className="w-11 h-11 rounded-full bg-[#FF6B6B] flex items-center justify-center shrink-0">
                   <Flame className="w-5 h-5 text-white" fill="currentColor" />
@@ -216,6 +261,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
 
+              {/* Badges Pill */}
               <div className="bg-white rounded-[20px] px-5 py-3 flex items-center gap-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#E2E8F0]">
                 <div className="w-11 h-11 rounded-full bg-[#305EFF] flex items-center justify-center shrink-0">
                   <Trophy className="w-5 h-5 text-white" fill="currentColor" />

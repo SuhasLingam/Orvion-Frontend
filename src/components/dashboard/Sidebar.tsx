@@ -94,11 +94,11 @@ export default function Sidebar({ onNav }: Props) {
         </Link>
         {/* Logout */}
         <button
-          onClick={async () => {
-            const { createClient } = await import("~/utils/supabase/client");
-            const supabase = createClient();
-            await supabase.auth.signOut();
-            window.location.href = "/auth";
+          onClick={() => {
+            void import("~/utils/api").then(({ clearToken }) => {
+              clearToken();
+              window.location.href = "/";
+            });
           }}
           className="flex w-full items-center gap-2 px-3 py-2 text-[11px] text-[#FF7B72] hover:bg-[#FF7B7211] rounded-xl transition-colors"
         >
