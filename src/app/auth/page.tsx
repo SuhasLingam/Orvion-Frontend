@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Lock, Mail, User, Sparkles } from "lucide-react";
-import { apiLogin, saveToken } from "~/utils/api";
+import { apiLogin, apiRegister, saveToken } from "~/utils/api";
 
 function AuthContent() {
   const [isLogin, setIsLogin] = useState(true);
@@ -35,24 +35,16 @@ function AuthContent() {
         const res = await apiLogin({ email, password });
         saveToken(res.access_token);
       } else {
-        // ── Registration — call FastAPI register endpoint ───────────────
-        const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-        const regRes = await fetch(`${BASE_URL}/auth/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name }),
-        });
-        if (!regRes.ok) {
-          let msg = "Registration failed";
-          try {
-            const err = await regRes.json() as { detail?: string };
-            msg = err.detail ?? msg;
-          } catch { /* empty */ }
-          throw new Error(msg);
+        // ── Registration via apiRegister → auto-login for token ────────
+        const regResult = await apiRegister({ name, email, password });
+        if (regResult.access_token) {
+          // Backend returned token directly — save it
+          saveToken(regResult.access_token);
+        } else {
+          // Backend didn't return token — auto-login to get one
+          const tokenRes = await apiLogin({ email, password });
+          saveToken(tokenRes.access_token);
         }
-        // Auto-login after registration
-        const tokenRes = await apiLogin({ email, password });
-        saveToken(tokenRes.access_token);
       }
 
       router.replace(returnUrl);

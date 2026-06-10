@@ -65,7 +65,7 @@ export interface LoginResponse {
 }
 
 export async function apiLogin(data: LoginRequest): Promise<LoginResponse> {
-  // FastAPI oauth2 form-encoded login
+  // FastAPI OAuth2 form-encoded login
   const body = new URLSearchParams({
     username: data.email,
     password: data.password,
@@ -78,7 +78,6 @@ export async function apiLogin(data: LoginRequest): Promise<LoginResponse> {
   });
 
   if (!res.ok) {
-    // Try JSON error message
     let message = "Invalid credentials";
     try {
       const err = await res.json() as { detail?: string };
@@ -88,6 +87,42 @@ export async function apiLogin(data: LoginRequest): Promise<LoginResponse> {
   }
 
   return res.json() as Promise<LoginResponse>;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  id: string;
+  name: string;
+  email: string;
+  access_token?: string;
+}
+
+/**
+ * POST /auth/register — creates a new user account.
+ * If the backend returns an access_token directly, it is saved automatically.
+ */
+export async function apiRegister(data: RegisterRequest): Promise<RegisterResponse> {
+  const res = await fetch(`${BASE_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    let message = "Registration failed";
+    try {
+      const err = await res.json() as { detail?: string };
+      message = err.detail ?? message;
+    } catch { /* empty */ }
+    throw new Error(message);
+  }
+
+  return res.json() as Promise<RegisterResponse>;
 }
 
 // ─── User ─────────────────────────────────────────────────────────────────────
@@ -100,6 +135,9 @@ export interface MeResponse {
   xp: number;
   streak_days: number;
   last_active: string | null;
+  // TODO(backend): program_id, program, and joined_at are not yet returned by
+  // the backend /auth/me endpoint. Raise a backend ticket to add these fields
+  // to the UserResponse schema. Until then the frontend falls back to defaults.
   program_id?: string;
   program?: string;
   joined_at?: string;
@@ -111,12 +149,14 @@ export async function apiGetMe(): Promise<MeResponse> {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
+/** Matches the actual backend GET /dashboard response shape. */
 export interface DashboardResponse {
-  xp?: number;
-  level?: number;
-  streak_days?: number;
-  badges_earned?: number;
-  [key: string]: unknown;
+  completed_lessons: number;
+  total_lessons: number;
+  completed_projects: number;
+  total_projects: number;
+  total_tests_taken: number;
+  readiness_score: number;
 }
 
 export async function apiGetDashboard(): Promise<DashboardResponse> {
@@ -136,13 +176,15 @@ export async function apiGetReadiness(): Promise<ReadinessResponse> {
 
 // ─── Progress ─────────────────────────────────────────────────────────────────
 
+/** Matches the actual backend GET /progress response shape. */
 export interface ProgressResponse {
-  completed: number;
-  total: number;
-  watched?: number;
-  pending?: number;
-  completion_pct?: number;
-  nodes?: { node_id: string; status: "locked" | "active" | "completed" }[];
+  completed_lessons: number;
+  total_lessons: number;
+  completed_projects?: number;
+  total_projects?: number;
+  // TODO(backend): Add a `nodes` array of { node_id, status } to ProgressResponse
+  // so the frontend can apply per-node completion status from the server.
+  // Until that backend change lands, node status is local-only and resets on refresh.
 }
 
 export async function apiGetProgress(): Promise<ProgressResponse> {
@@ -151,13 +193,17 @@ export async function apiGetProgress(): Promise<ProgressResponse> {
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
 
+/**
+ * Matches the actual backend badge shape.
+ * NOTE: The backend does not yet return `icon` or `rarity`.
+ * Those fields default to a placeholder until the backend schema is extended.
+ */
 export interface BadgeItem {
-  id: string;
-  title: string;
-  icon: string;
-  rarity: "common" | "rare" | "epic" | "legendary";
-  is_earned: boolean;
-  earned_at?: string;
+  badge_id: string;
+  name: string;
+  description?: string;
+  awarded_at: string | null;
+  // TODO(backend): Add `icon` and `rarity` fields to the badge schema.
 }
 
 export async function apiGetBadges(): Promise<BadgeItem[]> {
@@ -166,22 +212,95 @@ export async function apiGetBadges(): Promise<BadgeItem[]> {
 
 // ─── Complete Node ─────────────────────────────────────────────────────────────
 
-export interface CompleteNodeRequest {
-  node_id: string;
-  xp_reward: number;
+export interface LessonProgressRequest {
+  watch_time: number;       // seconds watched
+  completed: boolean;
+  rewatch_count: number;
 }
 
-export interface CompleteNodeResponse {
+export interface LessonProgressResponse {
   success: boolean;
   new_xp?: number;
   new_level?: number;
 }
 
-export async function apiCompleteNode(
-  data: CompleteNodeRequest
-): Promise<CompleteNodeResponse> {
-  return request<CompleteNodeResponse>("/progress/complete", {
+/**
+ * POST /lessons/{lesson_id}/progress
+ *
+ * The node ID stored in the frontend is a string like "node_fsd_m0_w1".
+ * The backend expects a numeric lesson_id in the URL path.
+ *
+ * Mapping convention: extract the module index (mIdx) and week index (wIdx)
+ * from the node ID and derive a lesson_id as (mIdx * 100 + wIdx + 1).
+ *
+ * TODO(backend): Confirm the exact node_id → lesson_id mapping with the backend
+ * team and update this function if the convention differs.
+ */
+export function nodeidToLessonId(nodeId: string): number {
+  // e.g. "node_fsd_m0_w2"  →  mIdx=0, wIdx=2  →  lessonId=3
+  const parts = nodeId.split("_");
+  const mIdx = parseInt(parts[2]?.replace("m", "") ?? "0", 10);
+  const wIdx = parseInt(parts[3]?.replace("w", "") ?? "0", 10);
+  return mIdx * 100 + wIdx + 1;
+}
+
+export async function apiCompleteLesson(
+  nodeId: string,
+  opts: Partial<LessonProgressRequest> = {}
+): Promise<LessonProgressResponse> {
+  const lessonId = nodeidToLessonId(nodeId);
+  return request<LessonProgressResponse>(`/lessons/${lessonId}/progress`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      watch_time: opts.watch_time ?? 0,
+      completed: opts.completed ?? true,
+      rewatch_count: opts.rewatch_count ?? 0,
+    }),
+  });
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export interface BackendNotification {
+  id: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  type?: string;
+}
+
+export async function apiGetNotifications(): Promise<BackendNotification[]> {
+  return request<BackendNotification[]>("/notifications");
+}
+
+export async function apiMarkNotificationRead(id: string): Promise<void> {
+  await request<unknown>(`/notifications/read`, {
+    method: "POST",
+    body: JSON.stringify({ notification_id: id }),
+  });
+}
+
+// ─── Recommendations (AI Insights) ────────────────────────────────────────────
+
+export interface BackendRecommendation {
+  weak_areas: string[];
+  strengths: string[];
+  next_actions: {
+    id: string;
+    title: string;
+    type: string;
+    priority: string;
+    reason: string;
+  }[];
+  generated_at: string;
+}
+
+export async function apiGetRecommendations(): Promise<BackendRecommendation> {
+  return request<BackendRecommendation>("/recommendations");
+}
+
+export async function apiRefreshRecommendations(): Promise<BackendRecommendation> {
+  return request<BackendRecommendation>("/recommendations/refresh", {
+    method: "POST",
   });
 }

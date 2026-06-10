@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { BookOpen, Calendar, MessageSquare, Download, FileText, BrainCircuit, Play, CheckCircle2, Eye, Clock } from "lucide-react";
 import { useUserStore } from "~/stores/userStore";
 import { useInsightStore } from "~/stores/insightStore";
@@ -10,7 +11,14 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tool
 export default function DashboardPage() {
   const { xpHistory } = useUserStore();
   const { insight } = useInsightStore();
-  const { learningPath, projects, interviews } = useProgressStore();
+  const { learningPath, projects, interviews, fetchProgress, isLoading } = useProgressStore();
+
+  // Self-fetch on mount so a direct URL visit or page refresh always loads data
+  useEffect(() => {
+    if (learningPath.length === 0) {
+      void fetchProgress();
+    }
+  }, [fetchProgress, learningPath.length]);
 
   const totalLessons = learningPath.length;
   const completedLessons = learningPath.filter((l) => l.status === "completed").length;
@@ -23,7 +31,7 @@ export default function DashboardPage() {
 
   // Dynamic Readiness Calculation (40% Learning, 40% Projects, 20% Interviews)
   const dynamicReadiness = Math.round((learningPct * 0.4) + (projectsPct * 0.4) + (interviewsPct * 0.2));
-  
+
   let readinessStatus = "Starting Out";
   if (dynamicReadiness >= 20) readinessStatus = "Making Progress";
   if (dynamicReadiness >= 50) readinessStatus = "Rising Star";
@@ -32,7 +40,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-20">
-      
+
       {/* ── Quick Actions Row ───────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -64,29 +72,34 @@ export default function DashboardPage() {
 
       {/* ── Main Dashboard Columns ──────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left Column (Span 2) */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Learning Progress Card */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
             className="bg-white rounded-[28px] p-7 md:p-8 border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
           >
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-[20px] font-extrabold text-[#1A202C]">Learning Progress</h3>
               <span className="flex items-center gap-2 text-[#4A5568] font-bold text-[14px]">
-                <BookOpen className="w-4 h-4" /> {completedLessons}/{totalLessons}
+                <BookOpen className="w-4 h-4" />
+                {isLoading ? (
+                  <span className="inline-block w-12 h-4 bg-[#E2E8F0] rounded animate-pulse" />
+                ) : (
+                  `${completedLessons}/${totalLessons}`
+                )}
               </span>
             </div>
-            
+
             <div className="mb-8">
               <div className="flex justify-between items-end mb-3">
                 <span className="text-[13px] font-semibold text-[#4A5568]">Overall Completion</span>
                 <span className="text-[18px] font-extrabold text-[#1A202C]">{pct}%</span>
               </div>
               <div className="h-2.5 w-full bg-[#F1F5F9] rounded-full overflow-hidden">
-                <motion.div 
+                <motion.div
                   initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: "easeOut" }}
                   className="h-full bg-[#305EFF] rounded-full"
                 />
@@ -94,22 +107,33 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-3 md:gap-4">
-              {[
-                { val: completedLessons, label: "Completed", icon: CheckCircle2 },
-                { val: watchedLessons, label: "Watched", icon: Eye },
-                { val: totalLessons - completedLessons, label: "Pending", icon: Clock },
-              ].map((stat, i) => (
-                <div key={i} className="bg-[#F8FAFC] rounded-[20px] p-4 flex flex-col items-start border border-[#E2E8F0]">
-                  <stat.icon className="w-5 h-5 text-[#305EFF] mb-3" />
-                  <span className="text-[24px] font-extrabold text-[#2C2A29] leading-none mb-1">{stat.val}</span>
-                  <span className="text-[12px] font-semibold text-[#7A7571]">{stat.label}</span>
-                </div>
-              ))}
+              {isLoading ? (
+                // Loading skeleton for stat boxes
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="bg-[#F8FAFC] rounded-[20px] p-4 border border-[#E2E8F0] animate-pulse">
+                    <div className="w-5 h-5 bg-[#E2E8F0] rounded-full mb-3" />
+                    <div className="h-6 w-8 bg-[#E2E8F0] rounded mb-1" />
+                    <div className="h-3 w-16 bg-[#E2E8F0] rounded" />
+                  </div>
+                ))
+              ) : (
+                [
+                  { val: completedLessons, label: "Completed", icon: CheckCircle2 },
+                  { val: watchedLessons, label: "Watched", icon: Eye },
+                  { val: totalLessons - completedLessons, label: "Pending", icon: Clock },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-[#F8FAFC] rounded-[20px] p-4 flex flex-col items-start border border-[#E2E8F0]">
+                    <stat.icon className="w-5 h-5 text-[#305EFF] mb-3" />
+                    <span className="text-[24px] font-extrabold text-[#2C2A29] leading-none mb-1">{stat.val}</span>
+                    <span className="text-[12px] font-semibold text-[#7A7571]">{stat.label}</span>
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
 
           {/* Performance Trend */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
             className="bg-white rounded-[28px] p-7 md:p-8 border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
           >
@@ -120,7 +144,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 12, fontWeight: 600 }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 12, fontWeight: 600 }} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontWeight: 'bold', color: '#1A202C' }}
                     itemStyle={{ color: '#305EFF' }}
                   />
@@ -133,21 +157,21 @@ export default function DashboardPage() {
 
         {/* Right Column (Span 1) */}
         <div className="space-y-6">
-          
+
           {/* Placement Readiness */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
             className="bg-white rounded-[28px] p-7 border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col items-center relative overflow-hidden"
           >
             <div className="flex justify-between items-center w-full mb-8">
               <h3 className="text-[18px] font-extrabold text-[#1A202C]">Placement Readiness</h3>
             </div>
- 
+
             <div className="relative w-40 h-40 mb-6 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="40" fill="transparent" stroke="#F1F5F9" strokeWidth="8" />
-                <motion.circle 
-                  cx="50" cy="50" r="40" fill="transparent" stroke="#305EFF" strokeWidth="8" 
+                <motion.circle
+                  cx="50" cy="50" r="40" fill="transparent" stroke="#305EFF" strokeWidth="8"
                   strokeDasharray="251.2"
                   initial={{ strokeDashoffset: 251.2 }}
                   animate={{ strokeDashoffset: 251.2 - (251.2 * dynamicReadiness) / 100 }}
@@ -180,13 +204,12 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* AI Mentor */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
             className="bg-gradient-to-br from-[#305EFF] to-[#1E3A8A] rounded-[28px] p-7 text-white shadow-lg relative overflow-hidden"
           >
-            {/* Background design element */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl transform translate-x-10 -translate-y-10" />
-            
+
             <div className="relative z-10 flex flex-col">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-5 backdrop-blur-md border border-white/10">
                 <BrainCircuit className="w-6 h-6 text-white" />
@@ -200,7 +223,7 @@ export default function DashboardPage() {
               </button>
             </div>
           </motion.div>
-          
+
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import {
   apiGetMe,
   apiGetReadiness,
   apiGetBadges,
+  apiGetDashboard,
   type MeResponse,
   type BadgeItem,
 } from "~/utils/api";
@@ -10,9 +11,11 @@ import {
 export interface Badge {
   id: string;
   title: string;
+  /** TODO(backend): icon not yet in backend schema — uses placeholder until added. */
   icon: string;
   earnedAt?: string;
   isEarned: boolean;
+  /** TODO(backend): rarity not yet in backend schema — defaults to "common" until added. */
   rarity: "common" | "rare" | "epic" | "legendary";
 }
 
@@ -21,7 +24,9 @@ interface UserState {
   name: string;
   initials: string;
   email: string;
+  /** TODO(backend): program is not returned by /auth/me yet — falls back to default until backend adds it. */
   program: string;
+  /** TODO(backend): program_id is not returned by /auth/me yet — falls back to "fsd" until backend adds it. */
   programId: string;
   level: number;
   levelLabel: string;
@@ -33,8 +38,15 @@ interface UserState {
   lastActive: string | null;
   lastActiveMinutesAgo: number;
   cohortRank: number;
+  /** TODO(backend): joined_at is not returned by /auth/me yet — shows "Just now" until backend adds it. */
   joinedAt: string;
   badges: Badge[];
+  // Dashboard summary stats from GET /dashboard
+  completedLessons: number;
+  totalLessons: number;
+  completedProjects: number;
+  totalProjects: number;
+  totalTestsTaken: number;
   weeklyGoal: { target: number; completed: number; label: string; resetsIn: string };
   xpHistory: { week: string; xp: number }[];
   activityHeatmap: { date: string; count: number }[];
@@ -66,13 +78,24 @@ function formatLastActive(isoString: string | null): number {
   return Math.max(0, Math.floor(diff / 60000));
 }
 
+/** Derive a placeholder icon name from the badge title for display. */
+function deriveBadgeIcon(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes("streak")) return "🔥";
+  if (n.includes("test") || n.includes("quiz")) return "📝";
+  if (n.includes("project")) return "🚀";
+  if (n.includes("interview")) return "🎤";
+  if (n.includes("level") || n.includes("rank")) return "⭐";
+  return "🏅";
+}
+
 export const useUserStore = create<UserState>((set, _get) => ({
   id: null,
   name: "Student",
   initials: "ST",
   email: "",
-  program: "Full-Stack Developer",
-  programId: "fsd",
+  program: "Full-Stack Developer",  // TODO(backend): waiting on /auth/me to return program
+  programId: "fsd",                  // TODO(backend): waiting on /auth/me to return program_id
   level: 1,
   levelLabel: "Novice",
   readinessScore: 0,
@@ -83,8 +106,13 @@ export const useUserStore = create<UserState>((set, _get) => ({
   lastActive: null,
   lastActiveMinutesAgo: 0,
   cohortRank: 0,
-  joinedAt: "Just now",
+  joinedAt: "Just now",              // TODO(backend): waiting on /auth/me to return joined_at
   badges: [],
+  completedLessons: 0,
+  totalLessons: 0,
+  completedProjects: 0,
+  totalProjects: 0,
+  totalTestsTaken: 0,
   weeklyGoal: { target: 1000, completed: 0, label: "Earn 1000 XP", resetsIn: "7d" },
   xpHistory: [],
   activityHeatmap: [],
@@ -95,7 +123,7 @@ export const useUserStore = create<UserState>((set, _get) => ({
     set({ isLoading: true, fetchError: null });
 
     try {
-      // ── 1. /auth/me ────────────────────────────────────────────────────
+      // ── 1. GET /auth/me ──────────────────────────────────────────────────
       let me: MeResponse;
       try {
         me = await apiGetMe();
@@ -109,37 +137,23 @@ export const useUserStore = create<UserState>((set, _get) => ({
         (me.name?.trim() || (me.email ? me.email.split("@")[0] : undefined)) ??
         "Student";
 
-      const xpToNext = 500 * me.level; // simple progression
+      const xpToNext = 500 * me.level;
       const minutesAgo = formatLastActive(me.last_active ?? null);
-
       const levelLabel = getLevelLabel(me.level);
 
-      // Generate XP history based on joined_at and current xp
-      const enrollmentDate = me.joined_at ? new Date(me.joined_at) : new Date();
-      const today = new Date();
-      const diffDays = Math.max(
-        1,
-        Math.ceil(
-          Math.abs(today.getTime() - enrollmentDate.getTime()) / (1000 * 60 * 60 * 24)
-        )
-      );
-      const totalWeeks = Math.max(1, Math.ceil(diffDays / 7));
-
-      const xpHistory: { week: string; xp: number }[] = [];
-      for (let w = 0; w < totalWeeks; w++) {
-        xpHistory.push({
-          week: `W${w + 1}`,
-          xp: w === totalWeeks - 1 ? me.xp : Math.round((me.xp / totalWeeks) * (w + 1)),
-        });
-      }
+      // XP history: single point until backend returns joined_at
+      // TODO(backend): replace with real week-by-week data once joined_at is available
+      const xpHistory: { week: string; xp: number }[] = [{ week: "W1", xp: me.xp }];
 
       set({
         id: me.id,
         name: userName,
         initials: userName.substring(0, 2).toUpperCase(),
         email: me.email,
+        // program / programId / joinedAt: backend doesn't return these yet
         program: me.program ?? "Full-Stack Developer",
         programId: me.program_id ?? "fsd",
+        joinedAt: me.joined_at ? new Date(me.joined_at).toLocaleDateString() : "Just now",
         level: me.level,
         levelLabel,
         xp: me.xp,
@@ -147,9 +161,6 @@ export const useUserStore = create<UserState>((set, _get) => ({
         streak: me.streak_days,
         lastActive: me.last_active ?? null,
         lastActiveMinutesAgo: minutesAgo,
-        joinedAt: me.joined_at
-          ? new Date(me.joined_at).toLocaleDateString()
-          : "Just now",
         weeklyGoal: {
           target: 1000,
           completed: Math.min(me.xp, 1000),
@@ -159,7 +170,24 @@ export const useUserStore = create<UserState>((set, _get) => ({
         xpHistory,
       });
 
-      // ── 2. /readiness-score ────────────────────────────────────────────
+      // ── 2. GET /dashboard ────────────────────────────────────────────────
+      try {
+        const dash = await apiGetDashboard();
+        set({
+          completedLessons: dash.completed_lessons,
+          totalLessons: dash.total_lessons,
+          completedProjects: dash.completed_projects,
+          totalProjects: dash.total_projects,
+          totalTestsTaken: dash.total_tests_taken,
+          readinessScore: dash.readiness_score,
+          readinessBadge: getReadinessBadge(dash.readiness_score),
+          cohortRank: Math.min(99, Math.max(1, Math.floor(dash.readiness_score * 0.8 + 10))),
+        });
+      } catch (err) {
+        console.warn("[userStore] /dashboard failed (non-fatal):", err);
+      }
+
+      // ── 3. GET /readiness-score ──────────────────────────────────────────
       try {
         const readiness = await apiGetReadiness();
         const rScore = readiness.score ?? 0;
@@ -172,21 +200,24 @@ export const useUserStore = create<UserState>((set, _get) => ({
         console.warn("[userStore] /readiness-score failed (non-fatal):", err);
       }
 
-      // ── 3. /badges ─────────────────────────────────────────────────────
+      // ── 4. GET /badges ───────────────────────────────────────────────────
       try {
         const badgeData: BadgeItem[] = await apiGetBadges();
         const mappedBadges: Badge[] = badgeData.map((b) => ({
-          id: b.id,
-          title: b.title,
-          icon: b.icon,
-          rarity: b.rarity,
-          isEarned: b.is_earned,
-          earnedAt: b.earned_at,
+          // Map backend fields to frontend Badge interface
+          id: b.badge_id,
+          title: b.name,
+          // TODO(backend): icon not in backend schema yet — derived from name
+          icon: deriveBadgeIcon(b.name),
+          // is_earned = awarded_at is not null
+          isEarned: b.awarded_at !== null,
+          earnedAt: b.awarded_at ?? undefined,
+          // TODO(backend): rarity not in backend schema yet — defaults to "common"
+          rarity: "common" as const,
         }));
         set({ badges: mappedBadges });
       } catch (err) {
         console.warn("[userStore] /badges failed (non-fatal):", err);
-        // keep empty badges — no fake mock data
       }
 
       set({ isLoading: false });

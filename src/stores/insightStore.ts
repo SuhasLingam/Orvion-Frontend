@@ -1,4 +1,9 @@
 import { create } from "zustand";
+import {
+  apiGetRecommendations,
+  apiRefreshRecommendations,
+  type BackendRecommendation,
+} from "~/utils/api";
 
 export interface ActionItem {
   id: string;
@@ -16,17 +21,35 @@ export interface LLMInsight {
   lastFetchedMinutesAgo: number;
 }
 
-const fallbackInsight: LLMInsight = {
-  weakAreas: ["React Hooks", "Dynamic Programming"],
-  strengths: ["SQL Joins", "REST APIs", "System Design"],
-  nextActions: [
-    { id: "1", title: "Review useCallback & useMemo", type: "review", priority: "high", reason: "Missed 3 questions in recent mock test." },
-    { id: "2", title: "Practice Graph Traversal", type: "practice", priority: "medium", reason: "Struggled with pathfinding in interview." },
-    { id: "3", title: "Build Auth Module", type: "project", priority: "low", reason: "Good next step for full-stack progression." },
-  ],
-  tipOfDay: "Focus on understanding *why* a component re-renders before trying to optimize it with memoization.",
-  lastFetchedMinutesAgo: 45,
-};
+/** Client-side tip-of-day fallback — backend does not return this field. */
+const CLIENT_TIP =
+  "Focus on understanding *why* a component re-renders before trying to optimize it with memoization.";
+
+function minutesAgoFromISO(isoString: string): number {
+  const diff = Date.now() - new Date(isoString).getTime();
+  return Math.max(0, Math.floor(diff / 60000));
+}
+
+function mapRecommendation(r: BackendRecommendation): LLMInsight {
+  return {
+    weakAreas: r.weak_areas,
+    strengths: r.strengths,
+    nextActions: r.next_actions.map((a) => ({
+      id: a.id,
+      title: a.title,
+      type: (["review", "practice", "project"].includes(a.type)
+        ? a.type
+        : "review") as ActionItem["type"],
+      priority: (["high", "medium", "low"].includes(a.priority)
+        ? a.priority
+        : "medium") as ActionItem["priority"],
+      reason: a.reason,
+    })),
+    // Backend does not return tip_of_day — use client-side fallback
+    tipOfDay: CLIENT_TIP,
+    lastFetchedMinutesAgo: minutesAgoFromISO(r.generated_at),
+  };
+}
 
 interface InsightState {
   insight: LLMInsight | null;
@@ -37,25 +60,59 @@ interface InsightState {
   nextActions: ActionItem[];
   tipOfDay: string;
   fetchInsights: () => Promise<void>;
+  refreshInsights: () => Promise<void>;
 }
 
 export const useInsightStore = create<InsightState>((set) => ({
-  insight: fallbackInsight,
+  insight: null,
   isLoading: false,
-  lastFetchedMinutesAgo: fallbackInsight.lastFetchedMinutesAgo,
-  weakAreas: fallbackInsight.weakAreas,
-  strengths: fallbackInsight.strengths,
-  nextActions: fallbackInsight.nextActions,
-  tipOfDay: fallbackInsight.tipOfDay,
+  lastFetchedMinutesAgo: null,
+  weakAreas: [],
+  strengths: [],
+  nextActions: [],
+  tipOfDay: CLIENT_TIP,
+
   fetchInsights: async () => {
-    // In a real Supabase setup, this would call an Edge Function or backend endpoint to run the LLM.
-    // For now, we simulate the LLM generation time.
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 2200));
-    set({
-      isLoading: false,
-      lastFetchedMinutesAgo: 0,
-      insight: fallbackInsight,
-    });
+    try {
+      const raw = await apiGetRecommendations();
+      const mapped = mapRecommendation(raw);
+      set({
+        insight: mapped,
+        weakAreas: mapped.weakAreas,
+        strengths: mapped.strengths,
+        nextActions: mapped.nextActions,
+        tipOfDay: mapped.tipOfDay,
+        lastFetchedMinutesAgo: mapped.lastFetchedMinutesAgo,
+      });
+    } catch (err) {
+      console.warn("[insightStore] /recommendations failed (non-fatal):", err);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  /**
+   * Triggers backend LLM re-generation via POST /recommendations/refresh.
+   * Rate-limited to once every 6 hours on the backend side.
+   */
+  refreshInsights: async () => {
+    set({ isLoading: true });
+    try {
+      const raw = await apiRefreshRecommendations();
+      const mapped = mapRecommendation(raw);
+      set({
+        insight: mapped,
+        weakAreas: mapped.weakAreas,
+        strengths: mapped.strengths,
+        nextActions: mapped.nextActions,
+        tipOfDay: mapped.tipOfDay,
+        lastFetchedMinutesAgo: 0,
+      });
+    } catch (err) {
+      console.warn("[insightStore] /recommendations/refresh failed:", err);
+    } finally {
+      set({ isLoading: false });
+    }
   },
 }));
