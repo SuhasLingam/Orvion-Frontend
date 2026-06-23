@@ -9,7 +9,7 @@ import { useProgressStore } from "~/stores/progressStore";
 import MilestoneToast from "~/components/dashboard/MilestoneToast";
 import {
   Star, Flame, Trophy, LayoutDashboard, Map, FolderKanban,
-  MessageSquare, Sparkles, User, LogOut, Menu, X,
+  MessageSquare, Sparkles, User, LogOut, Menu, X, ClipboardList,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clearToken, isLoggedIn } from "~/utils/api";
@@ -17,6 +17,7 @@ import { clearToken, isLoggedIn } from "~/utils/api";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/learn", label: "Journey", icon: Map },
+  { href: "/dashboard/tests", label: "Assessments", icon: ClipboardList },
   { href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
   { href: "/dashboard/interviews", label: "Interviews", icon: MessageSquare },
   { href: "/dashboard/ai", label: "AI Insights", icon: Sparkles },
@@ -30,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const {
     name, program, level, xp, streak, badges,
-    fetchProfile, isLoading, fetchError, lastActiveMinutesAgo,
+    fetchProfile, isLoading, fetchError, lastActiveMinutesAgo, logActivity,
   } = useUserStore();
   const { fetchProgress } = useProgressStore();
 
@@ -44,6 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     void fetchProfile().then(() => {
       void fetchProgress();
+      void logActivity();
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

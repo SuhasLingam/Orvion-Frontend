@@ -7,7 +7,7 @@ import BadgeGrid from "~/components/dashboard/BadgeGrid";
 import { useUserStore } from "~/stores/userStore";
 
 export default function ProfilePage() {
-  const { name, initials, program, level, levelLabel, readinessScore, readinessBadge, xp, streak, badges, xpHistory, activityHeatmap, joinedAt } = useUserStore();
+  const { name, initials, program, level, levelLabel, readinessScore, readinessBadge, xp, streak, badges, xpHistory, activityHeatmap, joinedAt, cohortRank } = useUserStore();
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-10 pb-20 pt-4 space-y-8">
@@ -49,6 +49,12 @@ export default function ProfilePage() {
               <Zap className="w-4 h-4 text-[#305EFF]" />
               <span className="text-[13px] font-bold text-[#1A202C]">{xp.toLocaleString()} XP</span>
             </div>
+            {cohortRank > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] shadow-sm">
+                <Trophy className="w-4 h-4 text-[#F59E0B]" />
+                <span className="text-[13px] font-bold text-[#1A202C]">Rank #{cohortRank} · ahead of {Math.max(0, 100 - cohortRank)}% of batch</span>
+              </div>
+            )}
           </div>
         </div>
 

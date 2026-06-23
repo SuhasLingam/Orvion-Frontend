@@ -4,8 +4,11 @@ import {
   apiGetReadiness,
   apiGetBadges,
   apiGetDashboard,
+  apiLogActivity,
+  apiGetLeaderboard,
   type MeResponse,
   type BadgeItem,
+  type LeaderboardEntry,
 } from "~/utils/api";
 
 export interface Badge {
@@ -50,11 +53,13 @@ interface UserState {
   weeklyGoal: { target: number; completed: number; label: string; resetsIn: string };
   xpHistory: { week: string; xp: number }[];
   activityHeatmap: { date: string; count: number }[];
+  leaderboard: LeaderboardEntry[];
   isLoading: boolean;
   fetchError: string | null;
 
   // Actions
   fetchProfile: () => Promise<void>;
+  logActivity: () => Promise<void>;
   addXP: (amount: number) => void;
 }
 
@@ -116,6 +121,7 @@ export const useUserStore = create<UserState>((set, _get) => ({
   weeklyGoal: { target: 1000, completed: 0, label: "Earn 1000 XP", resetsIn: "7d" },
   xpHistory: [],
   activityHeatmap: [],
+  leaderboard: [],
   isLoading: false,
   fetchError: null,
 
@@ -173,15 +179,16 @@ export const useUserStore = create<UserState>((set, _get) => ({
       // ── 2. GET /dashboard ────────────────────────────────────────────────
       try {
         const dash = await apiGetDashboard();
+        const dashReadiness = dash.readiness_score ?? 0;
         set({
           completedLessons: dash.completed_lessons,
           totalLessons: dash.total_lessons,
           completedProjects: dash.completed_projects,
           totalProjects: dash.total_projects,
           totalTestsTaken: dash.total_tests_taken,
-          readinessScore: dash.readiness_score,
-          readinessBadge: getReadinessBadge(dash.readiness_score),
-          cohortRank: Math.min(99, Math.max(1, Math.floor(dash.readiness_score * 0.8 + 10))),
+          readinessScore: dashReadiness,
+          readinessBadge: getReadinessBadge(dashReadiness),
+          cohortRank: Math.min(99, Math.max(1, Math.floor(dashReadiness * 0.8 + 10))),
         });
       } catch (err) {
         console.warn("[userStore] /dashboard failed (non-fatal):", err);
@@ -203,21 +210,41 @@ export const useUserStore = create<UserState>((set, _get) => ({
       // ── 4. GET /badges ───────────────────────────────────────────────────
       try {
         const badgeData: BadgeItem[] = await apiGetBadges();
-        const mappedBadges: Badge[] = badgeData.map((b) => ({
-          // Map backend fields to frontend Badge interface
-          id: b.badge_id,
-          title: b.name,
-          // TODO(backend): icon not in backend schema yet — derived from name
-          icon: deriveBadgeIcon(b.name),
-          // is_earned = awarded_at is not null
-          isEarned: b.awarded_at !== null,
-          earnedAt: b.awarded_at ?? undefined,
-          // TODO(backend): rarity not in backend schema yet — defaults to "common"
-          rarity: "common" as const,
-        }));
+        const allowedRarity = ["common", "rare", "epic", "legendary"] as const;
+        const mappedBadges: Badge[] = badgeData.map((b) => {
+          const rarity = (
+            allowedRarity.includes(b.rarity as (typeof allowedRarity)[number])
+              ? b.rarity
+              : "common"
+          ) as Badge["rarity"];
+          return {
+            id: b.id,
+            title: b.name,
+            // Prefer the backend-provided icon; fall back to a derived emoji.
+            icon: b.icon ?? deriveBadgeIcon(b.name),
+            isEarned: b.is_earned ?? b.awarded_at !== null,
+            earnedAt: b.awarded_at ?? undefined,
+            rarity,
+          };
+        });
         set({ badges: mappedBadges });
       } catch (err) {
         console.warn("[userStore] /badges failed (non-fatal):", err);
+      }
+
+      // ── 5. GET /leaderboard ──────────────────────────────────────────────
+      try {
+        const leaderboardData = await apiGetLeaderboard();
+        set({
+          leaderboard: leaderboardData.map((entry) => ({
+            ...entry,
+            initials: entry.name
+              ? entry.name.split(" ").map((w) => w[0]).join("").substring(0, 2).toUpperCase()
+              : "??",
+          })),
+        });
+      } catch (err) {
+        console.warn("[userStore] /leaderboard failed (non-fatal):", err);
       }
 
       set({ isLoading: false });
@@ -239,4 +266,20 @@ export const useUserStore = create<UserState>((set, _get) => ({
           : state.xpToNextLevel,
       };
     }),
+
+  /**
+   * POST /activity — logs a daily active session to keep the streak alive.
+   * Called once on dashboard mount; subsequent calls within the same session
+   * are no-ops (the backend is idempotent per-day).
+   */
+  logActivity: async () => {
+    try {
+      const result = await apiLogActivity({ active_time_mins: 1 });
+      if (typeof result.streak_days === "number") {
+        set({ streak: result.streak_days });
+      }
+    } catch (err) {
+      console.warn("[userStore] /activity failed (non-fatal):", err);
+    }
+  },
 }));

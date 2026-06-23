@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { RefreshCw, Zap, Bot, ArrowRight, BrainCircuit, AlertTriangle, Lightbulb } from "lucide-react";
 import { useInsightStore } from "~/stores/insightStore";
@@ -12,7 +12,14 @@ export default function AIPage() {
     strengths,
     nextActions,
     fetchInsights,
+    refreshInsights,
   } = useInsightStore();
+
+  // Load existing insights when the page mounts.
+  useEffect(() => {
+    void fetchInsights();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-10 pb-20 pt-4 space-y-8">
@@ -46,7 +53,7 @@ export default function AIPage() {
 
         <motion.button 
           initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
-          onClick={fetchInsights} disabled={isLoading}
+          onClick={refreshInsights} disabled={isLoading}
           className="relative z-10 flex items-center justify-center gap-2 px-6 py-3.5 bg-white text-[#1E3A8A] text-[14px] font-extrabold rounded-full hover:bg-opacity-90 disabled:opacity-50 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.1)] w-full md:w-auto mt-4 md:mt-0"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />

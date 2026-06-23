@@ -17,8 +17,13 @@ const STATUS_STYLE: Record<string, StatusStyle> = {
 };
 
 export default function TestsPage() {
-  const { tests } = useProgressStore();
+  const { tests, isLoading } = useProgressStore();
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  const attempted = tests.filter(t => t.status !== "pending" && t.score != null);
+  const averageScore = attempted.length > 0
+    ? Math.round(attempted.reduce((sum, t) => sum + (t.score ?? 0), 0) / attempted.length)
+    : null;
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-10 pb-20 pt-4">
@@ -36,7 +41,7 @@ export default function TestsPage() {
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             className="text-[#4A5568] text-[16px] font-medium"
           >
-            {tests.filter(t => t.status !== "pending").length} / {tests.length} assignments attempted
+            {isLoading ? "Loading…" : `${attempted.length} / ${tests.length} assignments attempted`}
           </motion.p>
         </div>
 
@@ -45,12 +50,44 @@ export default function TestsPage() {
           className="bg-white rounded-[20px] px-6 py-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#E2E8F0]"
         >
           <span className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider block mb-1">Average Score</span>
-          <span className="text-[24px] font-extrabold text-[#1A202C]">84%</span>
+          {isLoading ? (
+            <div className="h-8 w-14 bg-[#E2E8F0] rounded animate-pulse" />
+          ) : averageScore !== null ? (
+            <span className="text-[24px] font-extrabold text-[#1A202C]">{averageScore}%</span>
+          ) : (
+            <span className="text-[16px] font-bold text-[#94A3B8]">—</span>
+          )}
         </motion.div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {tests.map((test, i) => {
+      {/* Loading skeleton */}
+      {isLoading && (
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-20 bg-white rounded-[24px] border border-[#E2E8F0] animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && tests.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-24 gap-4 text-center"
+        >
+          <div className="w-16 h-16 rounded-full bg-[#F1F5F9] flex items-center justify-center border border-[#E2E8F0]">
+            <ClipboardList className="w-8 h-8 text-[#CBD5E1]" />
+          </div>
+          <h3 className="text-[20px] font-extrabold text-[#1A202C]">No assessments yet</h3>
+          <p className="text-[14px] font-medium text-[#94A3B8] max-w-sm">
+            Your assessments will appear here once your instructor assigns them. Keep progressing through the learning path!
+          </p>
+        </motion.div>
+      )}
+
+      {!isLoading && tests.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {tests.map((test, i) => {
           const s = STATUS_STYLE[test.status] ?? STATUS_STYLE.pending!;
           const isOpen = expanded === test.id;
           const weakTopics = test.topics ? test.topics.filter(t => t.score < 60) : [];
@@ -139,6 +176,7 @@ export default function TestsPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

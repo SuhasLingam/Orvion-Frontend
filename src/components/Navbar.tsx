@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -21,7 +21,6 @@ export default function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-    // Use FastAPI JWT token to determine auth state
     void import("~/utils/api").then(({ isLoggedIn }) => {
       setIsAuthenticated(isLoggedIn());
     });
@@ -32,26 +31,70 @@ export default function Navbar() {
     return null;
   }
 
+  if (!mounted) {
+    return (
+      <div className="sticky top-0 right-0 left-0 z-50 flex w-full justify-center px-3 pt-3">
+        <nav className="w-full rounded-2xl border border-[#E5E9F0] bg-white py-3 pr-3 pl-7 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/"
+              className="flex items-center gap-2 pl-2 outline-none focus:outline-none"
+            >
+              <Image
+                src="/logo.svg"
+                alt="Orvion logo"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
+              <Image
+                src="/logo-text.svg"
+                alt="Orvion"
+                width={80}
+                height={20}
+                className="object-contain"
+              />
+            </Link>
+          </div>
+        </nav>
+      </div>
+    );
+  }
+
   return (
-    <div className="sticky top-0 left-0 right-0 z-50 px-3 pt-3 w-full flex justify-center pointer-events-none">
-      <nav className="pointer-events-auto w-full bg-[linear-gradient(90deg,#FFFFFF_0%,#F3F6FA_100%)] rounded-2xl border border-[#E5E9F0] shadow-[0_8px_30px_rgb(0,0,0,0.04)] pl-7 pr-3 py-3">
+    <div className="pointer-events-none sticky top-0 right-0 left-0 z-50 flex w-full justify-center px-3 pt-3">
+      <nav className="pointer-events-auto w-full rounded-2xl border border-[#E5E9F0] bg-[linear-gradient(90deg,#FFFFFF_0%,#F3F6FA_100%)] py-3 pr-3 pl-7 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="flex items-center justify-between">
-          {/* Logo Section */}
-          <div className="flex items-center gap-3 shrink-0">
-            <Link href="/" className="flex items-center gap-3 pl-2">
-              <Image src="/logo.svg" alt="Orvion Logo" width={32} height={32} className="object-contain" />
-              <Image src="/logo-text.svg" alt="Orvion" width={80} height={14} className="object-contain" />
+          {/* Logo */}
+          <div className="flex shrink-0 items-center gap-3">
+            <Link
+              href="/"
+              className="flex items-center gap-2 pl-2 outline-none focus:outline-none"
+            >
+              <Image
+                src="/logo.svg"
+                alt="Orvion logo"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
+              <Image
+                src="/logo-text.svg"
+                alt="Orvion"
+                width={80}
+                height={20}
+                className="object-contain"
+              />
             </Link>
           </div>
 
           {/* Desktop Nav Links */}
-          <div className="hidden md:flex flex-1 justify-center space-x-12">
+          <div className="hidden flex-1 justify-center space-x-12 md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.text}
                 href={link.href}
-                className="text-orvion-nav-text font-medium text-[15px] hover:text-orvion-primary hover:scale-105 transition-all duration-300"
-                style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
+                className="text-[15px] font-medium text-[#4A5568] transition-all duration-300 hover:scale-105 hover:text-[#305EFF]"
               >
                 {link.text}
               </Link>
@@ -59,39 +102,41 @@ export default function Navbar() {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex shrink-0 items-center gap-6">
-            {mounted && isAuthenticated && (
+          <div className="hidden shrink-0 items-center gap-6 md:flex">
+            {isAuthenticated && (
               <Link
                 href="/dashboard"
-                className="text-orvion-nav-text font-medium text-[15px] hover:text-orvion-primary transition-colors"
-                style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
+                className="text-[15px] font-medium text-[#4A5568] transition-colors hover:text-[#305EFF]"
               >
                 Dashboard
               </Link>
             )}
             <Link
               href="/#programs"
-              className="flex items-center justify-center bg-orvion-primary text-white px-8 py-3 rounded-[100px] font-medium text-[15px] hover:shadow-[0_8px_15px_rgba(48,94,255,0.2)] hover:-translate-y-0.5 transition-all duration-300"
-              style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
+              className="flex items-center justify-center rounded-[100px] bg-[#305EFF] px-8 py-3 text-[15px] font-medium whitespace-nowrap text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_15px_rgba(48,94,255,0.2)]"
             >
               Explore Programs
             </Link>
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden shrink-0">
+          <div className="flex shrink-0 md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-orvion-nav-text p-2 rounded-2xl focus:outline-none hover:bg-black/5 transition-colors"
+              className="rounded-2xl p-2 text-[#4A5568] transition-colors hover:bg-black/5 focus:outline-none"
               aria-label="Toggle menu"
             >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Menu Container */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -99,27 +144,25 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="pointer-events-auto absolute top-[90px] left-4 right-4 sm:left-6 sm:right-6 md:hidden overflow-hidden bg-white/95 backdrop-blur-xl border border-black/5 shadow-2xl rounded-[32px]"
+            className="pointer-events-auto absolute top-[90px] right-4 left-4 overflow-hidden rounded-[32px] border border-black/5 bg-white/95 shadow-2xl backdrop-blur-xl sm:right-6 sm:left-6 md:hidden"
           >
-            <div className="px-5 pt-6 pb-8 space-y-2">
+            <div className="space-y-2 px-5 pt-6 pb-8">
               {navLinks.map((link) => (
                 <Link
                   key={link.text}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className="block px-6 py-4 rounded-xl text-[17px] font-medium text-orvion-nav-text hover:bg-black/5 hover:text-orvion-primary transition-colors text-center"
-                  style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
+                  className="block rounded-xl px-6 py-4 text-center text-[17px] font-medium text-[#4A5568] transition-colors hover:bg-black/5 hover:text-[#305EFF]"
                 >
                   {link.text}
                 </Link>
               ))}
-              <div className="pt-6 px-4 space-y-3">
-                {mounted && isAuthenticated && (
+              <div className="space-y-3 px-4 pt-6">
+                {isAuthenticated && (
                   <Link
                     href="/dashboard"
                     onClick={() => setIsOpen(false)}
-                    className="flex justify-center w-full border border-[#E5E9F0] text-orvion-nav-text hover:text-orvion-primary px-6 py-4 rounded-[100px] font-medium text-[17px] hover:bg-black/5 transition-all"
-                    style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
+                    className="flex w-full justify-center rounded-[100px] border border-[#E5E9F0] px-6 py-4 text-[17px] font-medium text-[#4A5568] transition-all hover:bg-black/5 hover:text-[#305EFF]"
                   >
                     Dashboard
                   </Link>
@@ -127,8 +170,7 @@ export default function Navbar() {
                 <Link
                   href="/#programs"
                   onClick={() => setIsOpen(false)}
-                  className="flex justify-center w-full bg-orvion-primary text-white px-6 py-4 rounded-[100px] font-medium text-[17px] hover:shadow-md transition-all active:scale-95"
-                  style={{ fontFamily: "'SF Pro Display', 'SF Pro', -apple-system, sans-serif" }}
+                  className="flex w-full justify-center rounded-[100px] bg-[#305EFF] px-6 py-4 text-[17px] font-medium text-white transition-all hover:shadow-md active:scale-95"
                 >
                   Explore Programs
                 </Link>

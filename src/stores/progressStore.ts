@@ -1,6 +1,14 @@
 import { create } from "zustand";
-import { apiGetProgress, apiCompleteLesson, isLoggedIn } from "~/utils/api";
-
+import {
+  apiGetProgress,
+  apiCompleteNode,
+  apiGetProjects,
+  apiGetTests,
+  apiGetInterviews,
+  isLoggedIn,
+  type BackendTest,
+  type BackendInterview,
+} from "~/utils/api";
 export interface LevelNode {
   id: string;
   title: string;
@@ -12,7 +20,7 @@ export interface LevelNode {
 }
 
 export interface Project {
-  id: string;
+  id: number;
   title: string;
   description: string;
   status: "completed" | "in_progress" | "locked";
@@ -68,6 +76,8 @@ interface ProgressState {
   tests: MockTest[];
   interviews: MockInterview[];
   subProgress: Record<string, number[]>;
+  /** Source-of-truth set of completed node_ids from the backend. */
+  completedNodes: string[];
   isLoading: boolean;
 
   fetchProgress: () => Promise<void>;
@@ -76,20 +86,96 @@ interface ProgressState {
 }
 
 /**
- * XP reward per node type — matches the backend gamification rules:
- *   lesson (video)  = +10 XP
+ * XP reward per node type — must match the backend gamification rules:
+ *   lesson (video)  = +10 XP   (LESSON_COMPLETED_XP)
  *   test (quiz)     = +25 XP
  *   project         = +100 XP
  *   interview       = +50 XP
+ * NOTE: the backend awards XP idempotently; the value passed here is only a
+ * hint used for the optimistic local display.
  */
 function xpForType(type: LevelNode["type"]): number {
   switch (type) {
-    case "quiz": return 25;
-    case "project": return 100;
-    case "interview": return 50;
+    case "quiz":
+      return 25;
+    case "project":
+      return 100;
+    case "interview":
+      return 50;
     case "video":
-    default: return 10;
+    default:
+      return 10;
   }
+}
+
+/** Map a backend test response to the frontend MockTest shape. */
+function mapBackendTest(t: BackendTest): MockTest {
+  return {
+    id: t.id,
+    title: t.title,
+    status: t.status === "completed" || t.status === "failed" ? "completed" : "pending",
+    score: t.score ?? undefined,
+    maxScore: t.max_score ?? 100,
+    duration: t.duration ?? "45 min",
+    topics: Array.isArray(t.topic_breakdown)
+      ? t.topic_breakdown.map((tb) => ({ topic: tb.topic, score: tb.score }))
+      : [],
+    history: Array.isArray(t.attempt_history)
+      ? t.attempt_history.map((a) => ({ date: a.date, score: a.score }))
+      : [],
+  };
+}
+
+/** Map a backend interview response to the frontend MockInterview shape. */
+function mapBackendInterview(iv: BackendInterview): MockInterview {
+  const date = iv.date ?? iv.created_at ?? "";
+  const formattedDate = date
+    ? new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "—";
+  return {
+    id: iv.id,
+    title: iv.title ?? `Interview ${iv.id.slice(0, 6)}`,
+    date: formattedDate,
+    overallScore: iv.overall_score ?? 0,
+    technicalScore: iv.technical_score ?? 0,
+    communicationScore: iv.communication_score ?? 0,
+    problemSolvingScore: iv.problem_solving_score ?? 0,
+    clarityScore: iv.clarity_score ?? 0,
+    feedback: iv.feedback_text ?? "No feedback available.",
+    questions: Array.isArray(iv.question_level_breakdown)
+      ? iv.question_level_breakdown.map((q) => ({
+          id: q.id,
+          question: q.question,
+          level: q.level,
+          result: q.result,
+          llmComment: q.llm_comment ?? "",
+        }))
+      : [],
+  };
+}
+
+/**
+ * Given the ordered curriculum nodes and the set of completed node_ids,
+ * derive each node's status with a strict sequential-unlock rule:
+ *   - any node in the completed set  -> "completed"
+ *   - the first non-completed node   -> "active"
+ *   - everything after that          -> "locked"
+ */
+function applyStatuses(
+  path: Omit<LevelNode, "status">[],
+  completed: Set<string>,
+): LevelNode[] {
+  let activeAssigned = false;
+  return path.map((node) => {
+    if (completed.has(node.id)) {
+      return { ...node, status: "completed" as const };
+    }
+    if (!activeAssigned) {
+      activeAssigned = true;
+      return { ...node, status: "active" as const };
+    }
+    return { ...node, status: "locked" as const };
+  });
 }
 
 export const useProgressStore = create<ProgressState>((set, get) => ({
@@ -98,6 +184,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   tests: [],
   interviews: [],
   subProgress: {},
+  completedNodes: [],
   isLoading: false,
 
   fetchProgress: async () => {
@@ -105,111 +192,114 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     set({ isLoading: true });
 
     try {
-      // ── 1. Get the user's program from userStore (already fetched) ────────
+      // 1. Resolve the user's program.
       const { useUserStore } = await import("~/stores/userStore");
       const { programId } = useUserStore.getState();
 
-      // ── 2. Build the learning path from local curriculum data ─────────────
       const { programs } = await import("~/data/programs");
       const program = programs.find((p) => p.id === programId) ?? programs[0];
 
-      // ── 3. GET /progress — use summary stats; node-level statuses not yet
-      //       available from backend. See TODO below.
-      //
-      // TODO(backend): The backend ProgressResponse does not yet include a
-      // `nodes` array of { node_id, status } pairs. Until that endpoint is
-      // extended, node completion status is local-only and resets on page
-      // refresh. Raise a backend ticket to add node statuses to /progress.
+      // 2. Pull the authoritative completed-node set from the backend.
+      let completedNodes: string[] = [];
       try {
-        await apiGetProgress();
-        // We still call the endpoint to ensure it returns 200 (confirms auth),
-        // but we don't consume the fields because node-level data is missing.
+        const progress = await apiGetProgress();
+        completedNodes = progress.completed_nodes ?? [];
       } catch (err) {
         console.warn("[progressStore] /progress failed (non-fatal):", err);
       }
+      const completedSet = new Set(completedNodes);
 
-      // ── 4. Build learning path from curriculum + local sub-progress ────────
+      // 3. Build the curriculum node list (without status), then apply status.
+      const baseNodes: Omit<LevelNode, "status">[] = [];
       if (program?.curriculum) {
-        const mappedPath: LevelNode[] = [];
-        let globalIdx = 0;
-
         program.curriculum.forEach((month, mIdx) => {
           month.weeks.forEach((week, wIdx) => {
-            const nodeId = `node_${program.id}_m${mIdx}_w${wIdx}`;
-            const type: LevelNode["type"] = "video";
-
-            mappedPath.push({
-              id: nodeId,
+            baseNodes.push({
+              id: `node_${program.id}_m${mIdx}_w${wIdx}`,
               title: week.title,
               description: week.topics.join(" • "),
-              xpReward: xpForType(type),
-              type,
+              xpReward: xpForType("video"),
+              type: "video",
               duration: "1 week",
-              // Status is local-only until backend adds node statuses to /progress
-              status: globalIdx === 0 ? "active" : "locked",
             });
-            globalIdx++;
           });
 
           if (month.assessment) {
-            const assessId = `node_assess_${program.id}_m${mIdx}`;
-            const type: LevelNode["type"] = "quiz";
-            mappedPath.push({
-              id: assessId,
+            baseNodes.push({
+              id: `node_assess_${program.id}_m${mIdx}`,
               title: month.assessment,
               description: `Comprehensive evaluation for ${month.title}`,
-              xpReward: xpForType(type),
-              type,
+              xpReward: xpForType("quiz"),
+              type: "quiz",
               duration: "1 hour",
-              status: "locked",
             });
-            globalIdx++;
           }
         });
-
-        set({ learningPath: mappedPath });
-      } else {
-        set({ learningPath: [] });
       }
 
-      // ── 5. Build projects from local curriculum ────────────────────────────
-      if (program?.projectsFramework) {
-        const mappedProjects: Project[] = [];
-        let pIdx = 0;
+      set({
+        completedNodes,
+        learningPath: applyStatuses(baseNodes, completedSet),
+      });
 
-        program.projectsFramework.sets.forEach((projSet) => {
-          const difficultyLevel = projSet.level.toLowerCase().includes("advanced")
-            ? "Advanced"
-            : projSet.level.toLowerCase().includes("intermediate")
-            ? "Intermediate"
-            : "Beginner";
+      // 4. Load projects from backend
+      try {
+        const backendProjects = await apiGetProjects();
+        console.log("PROJECTS FROM API:", backendProjects);
 
-          projSet.projects.forEach((projTitle) => {
-            const projId = `proj_${program.id}_${pIdx}`;
-            mappedProjects.push({
-              id: projId,
-              title: projTitle,
-              description: projSet.description,
-              difficulty: difficultyLevel,
-              techStack: program.technologies.slice(0, 4),
-              status: pIdx === 0 ? "in_progress" : "locked",
-              progress: 0,
-              codeQuality: 0,
-            });
-            pIdx++;
-          });
+        interface BackendProject {
+          id: string | number;
+          title: string;
+          description?: string;
+          is_locked?: boolean;
+          status?: string;
+          code_quality_score?: number;
+        }
+
+        set({
+          projects: (backendProjects as BackendProject[]).map((p) => ({
+            id: Number(p.id),
+            title: p.title,
+            description: p.description ?? "",
+            difficulty: "Beginner" as const,
+            techStack: [],
+
+            status: p.is_locked
+              ? ("locked" as const)
+              : p.status === "completed"
+                ? ("completed" as const)
+                : ("in_progress" as const),
+
+            progress: p.status === "completed" ? 100 : 0,
+
+            codeQuality: p.code_quality_score ?? 0,
+          })),
         });
-
-        set({ projects: mappedProjects });
-      } else {
+      } catch (err) {
+        console.error("Failed to load projects:", err);
         set({ projects: [] });
       }
 
-      // ── 6. Restore sub-progress from localStorage ──────────────────────────
+      // 5. Load tests from backend
+      try {
+        const backendTests = await apiGetTests();
+        set({ tests: backendTests.map(mapBackendTest) });
+      } catch (err) {
+        console.warn("[progressStore] /tests failed (non-fatal):", err);
+      }
+
+      // 6. Load interviews from backend
+      try {
+        const backendInterviews = await apiGetInterviews();
+        set({ interviews: backendInterviews.map(mapBackendInterview) });
+      } catch (err) {
+        console.warn("[progressStore] /interviews failed (non-fatal):", err);
+      }
+
+      // 7. Restore per-topic sub-progress from localStorage (UI nicety only).
       const subProg: Record<string, number[]> = {};
-      const { learningPath: lp } = get();
-      lp.forEach((node) => {
-        if (typeof window !== "undefined") {
+      if (typeof window !== "undefined") {
+        get().learningPath.forEach((node) => {
           const saved = localStorage.getItem(`orvion_progress_${node.id}`);
           if (saved) {
             try {
@@ -218,28 +308,9 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
               console.error("Error parsing sub-progress:", e);
             }
           }
-        }
-      });
+        });
+      }
       set({ subProgress: subProg });
-
-      // ── 7. Apply completed status from localStorage ────────────────────────
-      const { learningPath: builtPath } = get();
-      let firstActive = false;
-      const withStatus = builtPath.map((node) => {
-        const completed = (subProg[node.id] ?? []).length;
-        // If all topics are locally marked done, treat node as completed
-        // (rough heuristic until backend node statuses are available)
-        if (completed > 0) {
-          return { ...node, status: "completed" as const };
-        }
-        if (!firstActive) {
-          firstActive = true;
-          return { ...node, status: "active" as const };
-        }
-        return { ...node, status: "locked" as const };
-      });
-      set({ learningPath: withStatus });
-
     } finally {
       set({ isLoading: false });
     }
@@ -247,11 +318,14 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
 
   updateSubProgress: (nodeId, completedIndices) => {
     set((state) => {
-      const newSubProgress = { ...state.subProgress, [nodeId]: completedIndices };
+      const newSubProgress = {
+        ...state.subProgress,
+        [nodeId]: completedIndices,
+      };
       if (typeof window !== "undefined") {
         localStorage.setItem(
           `orvion_progress_${nodeId}`,
-          JSON.stringify(completedIndices)
+          JSON.stringify(completedIndices),
         );
       }
       return { subProgress: newSubProgress };
@@ -259,43 +333,41 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   },
 
   completeNode: async (nodeId: string, xpReward: number) => {
-    // ── Optimistically update local state ─────────────────────────────────
-    let { learningPath } = get();
-
+    // Ensure the path exists so optimistic updates have something to act on.
+    let { learningPath, completedNodes } = get();
     if (learningPath.length === 0) {
       await get().fetchProgress();
       learningPath = get().learningPath;
+      completedNodes = get().completedNodes;
     }
 
-    const currentIndex = learningPath.findIndex((n) => n.id === nodeId);
-    const updatedPath = learningPath.map((node, idx) => {
-      if (node.id === nodeId) return { ...node, status: "completed" as const };
-      if (idx === currentIndex + 1 && node.status === "locked")
-        return { ...node, status: "active" as const };
-      return node;
+    // Optimistic: mark this node completed and recompute statuses so the next
+    // node unlocks immediately.
+    const optimisticCompleted = new Set([...completedNodes, nodeId]);
+    const base = learningPath.map(({ status: _status, ...rest }) => rest);
+    set({
+      completedNodes: Array.from(optimisticCompleted),
+      learningPath: applyStatuses(base, optimisticCompleted),
     });
-    set({ learningPath: updatedPath });
 
-    // ── POST /lessons/{lesson_id}/progress ────────────────────────────────
+    // Persist to the backend (authoritative). Idempotent — safe to retry.
     try {
-      await apiCompleteLesson(nodeId, {
-        watch_time: 0,
-        completed: true,
-        rewatch_count: 0,
-      });
+      await apiCompleteNode(nodeId, xpReward);
     } catch (err) {
-      console.warn("[progressStore] /lessons/{id}/progress failed (non-fatal):", err);
+      console.warn("[progressStore] /progress/complete failed:", err);
     }
 
-    // ── Refresh userStore XP / level ──────────────────────────────────────
+    // Re-sync the completed set + the user's XP/level from the server.
+    try {
+      await get().fetchProgress();
+    } catch (err) {
+      console.warn("[progressStore] progress re-sync failed:", err);
+    }
     try {
       const { useUserStore } = await import("~/stores/userStore");
       await useUserStore.getState().fetchProfile();
     } catch (err) {
       console.warn("[progressStore] fetchProfile refresh failed:", err);
     }
-
-    // Suppress unused variable warning (xpReward is used for optimistic local XP)
-    void xpReward;
   },
 }));

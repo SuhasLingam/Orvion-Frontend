@@ -4,8 +4,7 @@
  * Base URL is configured via NEXT_PUBLIC_API_URL (default: http://localhost:8000).
  */
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -28,7 +27,7 @@ export function isLoggedIn(): boolean {
 async function request<T>(
   path: string,
   options: RequestInit = {},
-  requireAuth = true
+  requireAuth = true,
 ): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -49,7 +48,10 @@ async function request<T>(
     throw new Error(`API ${path} failed [${res.status}]: ${text}`);
   }
 
-  return res.json() as Promise<T>;
+  // 202/204 or empty bodies should not blow up JSON.parse
+  if (res.status === 204) return undefined as T;
+  const raw = await res.text();
+  return (raw ? JSON.parse(raw) : undefined) as T;
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -64,25 +66,25 @@ export interface LoginResponse {
   token_type: string;
 }
 
+/**
+ * POST /auth/login — the backend expects a JSON body { email, password }
+ * (FastAPI LoginRequest model), NOT an OAuth2 form. Returns a bearer token.
+ */
 export async function apiLogin(data: LoginRequest): Promise<LoginResponse> {
-  // FastAPI OAuth2 form-encoded login
-  const body = new URLSearchParams({
-    username: data.email,
-    password: data.password,
-  });
-
-  const res = await fetch(`${BASE_URL}/auth/token`, {
+  const res = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: data.email, password: data.password }),
   });
 
   if (!res.ok) {
-    let message = "Invalid credentials";
+    let message = "Invalid email or password";
     try {
-      const err = await res.json() as { detail?: string };
+      const err = (await res.json()) as { detail?: string };
       message = err.detail ?? message;
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
     throw new Error(message);
   }
 
@@ -95,18 +97,22 @@ export interface RegisterRequest {
   password: string;
 }
 
+/**
+ * The backend /auth/register returns the created UserResponse (no token).
+ * The caller is expected to follow up with apiLogin to obtain a token.
+ */
 export interface RegisterResponse {
   id: string;
   name: string;
   email: string;
-  access_token?: string;
+  level?: number;
+  xp?: number;
 }
 
-/**
- * POST /auth/register — creates a new user account.
- * If the backend returns an access_token directly, it is saved automatically.
- */
-export async function apiRegister(data: RegisterRequest): Promise<RegisterResponse> {
+/** POST /auth/register — creates a new user account. */
+export async function apiRegister(
+  data: RegisterRequest,
+): Promise<RegisterResponse> {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -116,9 +122,11 @@ export async function apiRegister(data: RegisterRequest): Promise<RegisterRespon
   if (!res.ok) {
     let message = "Registration failed";
     try {
-      const err = await res.json() as { detail?: string };
+      const err = (await res.json()) as { detail?: string };
       message = err.detail ?? message;
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
     throw new Error(message);
   }
 
@@ -135,12 +143,9 @@ export interface MeResponse {
   xp: number;
   streak_days: number;
   last_active: string | null;
-  // TODO(backend): program_id, program, and joined_at are not yet returned by
-  // the backend /auth/me endpoint. Raise a backend ticket to add these fields
-  // to the UserResponse schema. Until then the frontend falls back to defaults.
-  program_id?: string;
-  program?: string;
-  joined_at?: string;
+  program_id?: string | null;
+  program?: string | null;
+  joined_at?: string | null;
 }
 
 export async function apiGetMe(): Promise<MeResponse> {
@@ -149,14 +154,21 @@ export async function apiGetMe(): Promise<MeResponse> {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
-/** Matches the actual backend GET /dashboard response shape. */
+/** Matches the backend GET /dashboard response shape. */
 export interface DashboardResponse {
+  user_id: string;
+  level: number;
+  xp: number;
+  streak_days: number;
+  readiness_score: number | null;
+  readiness_level?: string | null;
   completed_lessons: number;
   total_lessons: number;
+  completion_pct?: number;
+  badges_earned?: number;
   completed_projects: number;
   total_projects: number;
   total_tests_taken: number;
-  readiness_score: number;
 }
 
 export async function apiGetDashboard(): Promise<DashboardResponse> {
@@ -165,98 +177,94 @@ export async function apiGetDashboard(): Promise<DashboardResponse> {
 
 // ─── Readiness ────────────────────────────────────────────────────────────────
 
+/** Normalized readiness shape used by the frontend. */
 export interface ReadinessResponse {
   score: number;
-  level?: string;
+  level: number;
 }
 
+/**
+ * GET /readiness-score returns { readiness_score, level } from the backend.
+ * We normalize `readiness_score` -> `score` so the rest of the app reads `.score`.
+ */
 export async function apiGetReadiness(): Promise<ReadinessResponse> {
-  return request<ReadinessResponse>("/readiness-score");
+  const raw = await request<{ readiness_score: number; level: number }>(
+    "/readiness-score",
+  );
+  return {
+    score: typeof raw?.readiness_score === "number" ? raw.readiness_score : 0,
+    level: typeof raw?.level === "number" ? raw.level : 1,
+  };
 }
 
 // ─── Progress ─────────────────────────────────────────────────────────────────
 
-/** Matches the actual backend GET /progress response shape. */
+/** Matches the backend GET /progress response shape. */
 export interface ProgressResponse {
   completed_lessons: number;
   total_lessons: number;
-  completed_projects?: number;
-  total_projects?: number;
-  // TODO(backend): Add a `nodes` array of { node_id, status } to ProgressResponse
-  // so the frontend can apply per-node completion status from the server.
-  // Until that backend change lands, node status is local-only and resets on refresh.
+  current_level: number;
+  total_watch_time: number;
+  /** Frontend node_id strings the user has completed (source of truth for unlock). */
+  completed_nodes: string[];
 }
 
 export async function apiGetProgress(): Promise<ProgressResponse> {
-  return request<ProgressResponse>("/progress");
-}
-
-// ─── Badges ───────────────────────────────────────────────────────────────────
-
-/**
- * Matches the actual backend badge shape.
- * NOTE: The backend does not yet return `icon` or `rarity`.
- * Those fields default to a placeholder until the backend schema is extended.
- */
-export interface BadgeItem {
-  badge_id: string;
-  name: string;
-  description?: string;
-  awarded_at: string | null;
-  // TODO(backend): Add `icon` and `rarity` fields to the badge schema.
-}
-
-export async function apiGetBadges(): Promise<BadgeItem[]> {
-  return request<BadgeItem[]>("/badges");
+  const raw = await request<Partial<ProgressResponse>>("/progress");
+  return {
+    completed_lessons: raw.completed_lessons ?? 0,
+    total_lessons: raw.total_lessons ?? 0,
+    current_level: raw.current_level ?? 1,
+    total_watch_time: raw.total_watch_time ?? 0,
+    completed_nodes: Array.isArray(raw.completed_nodes)
+      ? raw.completed_nodes
+      : [],
+  };
 }
 
 // ─── Complete Node ─────────────────────────────────────────────────────────────
 
-export interface LessonProgressRequest {
-  watch_time: number;       // seconds watched
-  completed: boolean;
-  rewatch_count: number;
-}
-
-export interface LessonProgressResponse {
+export interface CompleteNodeResponse {
   success: boolean;
-  new_xp?: number;
-  new_level?: number;
+  node_id: string;
+  newly_completed: boolean;
+  xp_awarded: number;
+  new_xp: number;
+  new_level: number;
 }
 
 /**
- * POST /lessons/{lesson_id}/progress
+ * POST /progress/complete — marks a curriculum node complete by its node_id.
  *
- * The node ID stored in the frontend is a string like "node_fsd_m0_w1".
- * The backend expects a numeric lesson_id in the URL path.
- *
- * Mapping convention: extract the module index (mIdx) and week index (wIdx)
- * from the node ID and derive a lesson_id as (mIdx * 100 + wIdx + 1).
- *
- * TODO(backend): Confirm the exact node_id → lesson_id mapping with the backend
- * team and update this function if the convention differs.
+ * The backend persists completion against the node_id string directly
+ * (e.g. "node_fsd_m0_w1"), awards XP once, and returns the updated xp/level.
+ * No fragile node_id -> lesson_id guessing on the client anymore.
  */
-export function nodeidToLessonId(nodeId: string): number {
-  // e.g. "node_fsd_m0_w2"  →  mIdx=0, wIdx=2  →  lessonId=3
-  const parts = nodeId.split("_");
-  const mIdx = parseInt(parts[2]?.replace("m", "") ?? "0", 10);
-  const wIdx = parseInt(parts[3]?.replace("w", "") ?? "0", 10);
-  return mIdx * 100 + wIdx + 1;
+export async function apiCompleteNode(
+  nodeId: string,
+  xpReward = 0,
+): Promise<CompleteNodeResponse> {
+  return request<CompleteNodeResponse>("/progress/complete", {
+    method: "POST",
+    body: JSON.stringify({ node_id: nodeId, xp_reward: xpReward }),
+  });
 }
 
-export async function apiCompleteLesson(
-  nodeId: string,
-  opts: Partial<LessonProgressRequest> = {}
-): Promise<LessonProgressResponse> {
-  const lessonId = nodeidToLessonId(nodeId);
-  return request<LessonProgressResponse>(`/lessons/${lessonId}/progress`, {
-    method: "POST",
-    body: JSON.stringify({
-      watch_time: opts.watch_time ?? 0,
-      completed: opts.completed ?? true,
-      rewatch_count: opts.rewatch_count ?? 0,
-    }),
-  });
+// ─── Badges ───────────────────────────────────────────────────────────────────
+
+/** Matches the backend BadgeResponse shape. */
+export interface BadgeItem {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  rarity?: string;
+  is_earned?: boolean;
+  awarded_at: string | null;
+}
+
+export async function apiGetBadges(): Promise<BadgeItem[]> {
+  return request<BadgeItem[]>("/badges");
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────
@@ -267,6 +275,7 @@ export interface BackendNotification {
   is_read: boolean;
   created_at: string;
   type?: string;
+  title?: string | null;
 }
 
 export async function apiGetNotifications(): Promise<BackendNotification[]> {
@@ -282,25 +291,225 @@ export async function apiMarkNotificationRead(id: string): Promise<void> {
 
 // ─── Recommendations (AI Insights) ────────────────────────────────────────────
 
+/**
+ * Matches the backend LLMInsightResponse.
+ * NOTE: `next_actions` is an OBJECT { actions: string[], analytics_context }
+ * — NOT an array. `weak_areas` / `strengths` are flat string arrays.
+ */
 export interface BackendRecommendation {
+  user_id?: string;
   weak_areas: string[];
   strengths: string[];
   next_actions: {
-    id: string;
-    title: string;
-    type: string;
-    priority: string;
-    reason: string;
-  }[];
+    actions?: string[];
+    analytics_context?: unknown;
+  } | null;
+  readiness_level?: string;
+  confidence_score?: number;
   generated_at: string;
+  tip_of_day?: string | null;
 }
 
 export async function apiGetRecommendations(): Promise<BackendRecommendation> {
   return request<BackendRecommendation>("/recommendations");
 }
 
-export async function apiRefreshRecommendations(): Promise<BackendRecommendation> {
-  return request<BackendRecommendation>("/recommendations/refresh", {
+export interface RecommendationRefreshResponse {
+  message: string;
+  status: string;
+  generated_at: string | null;
+}
+
+/**
+ * POST /recommendations/generate — synchronously (re)generates insights and
+ * returns a status. Follow with apiGetRecommendations() to read the result.
+ * (The /refresh endpoint only queues an async job and returns 202.)
+ */
+export async function apiGenerateRecommendations(): Promise<RecommendationRefreshResponse> {
+  return request<RecommendationRefreshResponse>("/recommendations/generate", {
     method: "POST",
+  });
+}
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+export interface BackendTopicScore {
+  topic: string;
+  score: number;
+}
+
+export interface BackendTestAttempt {
+  date: string;
+  score: number;
+}
+
+export interface BackendTest {
+  id: string;
+  title: string;
+  topic?: string;
+  status: "pending" | "completed" | "failed";
+  score?: number | null;
+  max_score?: number;
+  duration?: string;
+  topic_breakdown?: BackendTopicScore[] | null;
+  attempt_history?: BackendTestAttempt[] | null;
+}
+
+export async function apiGetTests(): Promise<BackendTest[]> {
+  return request<BackendTest[]>("/tests");
+}
+
+export interface SubmitTestRequest {
+  answers: Record<string, unknown>;
+}
+
+export interface SubmitTestResponse {
+  score: number;
+  passed: boolean;
+  topic_breakdown: BackendTopicScore[];
+}
+
+export async function apiSubmitTest(
+  testId: string,
+  data: SubmitTestRequest,
+): Promise<SubmitTestResponse> {
+  return request<SubmitTestResponse>(`/tests/${testId}/submit`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function apiGetTestBreakdown(
+  testId: string,
+): Promise<BackendTopicScore[]> {
+  return request<BackendTopicScore[]>(`/tests/${testId}/breakdown`);
+}
+
+// ─── Interviews ───────────────────────────────────────────────────────────────
+
+export interface BackendQuestionResult {
+  id: string;
+  question: string;
+  level: "Easy" | "Medium" | "Hard";
+  result: "Correct" | "Partial" | "Incorrect";
+  llm_comment?: string;
+}
+
+export interface BackendInterview {
+  id: string;
+  title?: string | null;
+  date?: string | null;
+  created_at?: string | null;
+  overall_score?: number | null;
+  technical_score?: number | null;
+  communication_score?: number | null;
+  problem_solving_score?: number | null;
+  clarity_score?: number | null;
+  feedback_text?: string | null;
+  question_level_breakdown?: BackendQuestionResult[] | null;
+}
+
+export async function apiGetInterviews(): Promise<BackendInterview[]> {
+  return request<BackendInterview[]>("/interviews");
+}
+
+export async function apiSyncInterviews(): Promise<{ synced: number }> {
+  return request<{ synced: number }>("/interviews/sync", { method: "POST" });
+}
+
+// ─── Activity & Streaks ───────────────────────────────────────────────────────
+
+export interface ActivityLogRequest {
+  active_time_mins?: number;
+}
+
+export interface ActivityLogResponse {
+  streak_days: number;
+  xp?: number;
+}
+
+export async function apiLogActivity(
+  data?: ActivityLogRequest,
+): Promise<ActivityLogResponse> {
+  return request<ActivityLogResponse>("/activity", {
+    method: "POST",
+    body: JSON.stringify(data ?? {}),
+  });
+}
+
+export interface StreakResponse {
+  current_streak: number;
+  longest_streak: number;
+  history?: { date: string; active: boolean }[];
+}
+
+export async function apiGetStreaks(): Promise<StreakResponse> {
+  return request<StreakResponse>("/streaks");
+}
+
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
+
+export interface LeaderboardEntry {
+  user_id: string;
+  name: string;
+  xp: number;
+  level: number;
+  rank: number;
+  initials?: string;
+}
+
+export async function apiGetLeaderboard(): Promise<LeaderboardEntry[]> {
+  return request<LeaderboardEntry[]>("/leaderboard");
+}
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+
+export interface SubmitProjectRequest {
+  project_id: number;
+  github_url: string;
+}
+
+export interface BackendProject {
+  id: number;
+  title: string;
+  status?: string;
+  description?: string;
+  code_quality_score?: number;
+}
+
+export async function apiGetProjects(): Promise<BackendProject[]> {
+  return request<BackendProject[]>("/projects");
+}
+
+export async function apiAnalyzeProject(
+  data: SubmitProjectRequest,
+): Promise<unknown> {
+  return request<unknown>("/projects/analyze", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function apiReviewProject(
+  data: SubmitProjectRequest,
+): Promise<unknown> {
+  return request<unknown>("/projects/review", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export interface ProjectSubmissionResponse {
+  success: boolean;
+  score: number;
+  review: unknown;
+  project: unknown;
+}
+
+export async function apiSubmitProject(
+  data: SubmitProjectRequest,
+): Promise<ProjectSubmissionResponse> {
+  return request<ProjectSubmissionResponse>("/projects/submit", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }
